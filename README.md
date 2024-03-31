@@ -1,4 +1,6 @@
-# Ogu.Dal
+
+# <img src="logo/ogu-logo.png" alt="Header" width="24"/> Ogu.Dal 
+
 | **Build Status** | **Ogu.Dal.Sql** | **Ogu.Dal.MongoDb** | **Ogu.Dal.Redis** | **Ogu.Dal.Abstractions** |
 |-----------------|-----------------|---------------------|-------------------|--------------------------|
 | [![.NET Core Desktop](https://github.com/ogulcanturan/Ogu.Dal/actions/workflows/dotnet.yml/badge.svg?branch=master)](https://github.com/ogulcanturan/Ogu.Dal/actions/workflows/dotnet.yml) | [![NuGet](https://img.shields.io/nuget/v/Ogu.Dal.Sql.svg?color=1ecf18)](https://nuget.org/packages/Ogu.Dal.Sql) | [![NuGet](https://img.shields.io/nuget/v/Ogu.Dal.MongoDb.svg?color=1ecf18)](https://nuget.org/packages/Ogu.Dal.MongoDb) | [![NuGet](https://img.shields.io/nuget/v/Ogu.Dal.Redis.svg?color=1ecf18)](https://nuget.org/packages/Ogu.Dal.Redis) | [![NuGet](https://img.shields.io/nuget/v/Ogu.Dal.Abstractions.svg?color=1ecf18)](https://nuget.org/packages/Ogu.Dal.Abstractions) |
