@@ -1,6 +1,6 @@
-# Ogu.Dal.MongoDb
+# Ogu.Dal.Abstractions
 
-This library provides a structured repository pattern and abstractions for interacting with MongoDb databases
+This library provides abstractions for various Dal components used in the Ogu libraries
 
 **Links:**
 - [GitHub](https://github.com/ogulcanturan/Ogu.Dal)

@@ -5,22 +5,24 @@
 	<AssemblyName>Ogu.Dal.Abstractions</AssemblyName>
 	<PackageId>Ogu.Dal.Abstractions</PackageId>
 	<Product>Ogu.Dal.Abstractions</Product>
-	<Version>1.0.0</Version>
+	<Version>1.0.0-preview</Version>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Authors>Oğulcan TURAN</Authors>
 	<Copyright>Copyright (c) Oğulcan TURAN 2024</Copyright>
 	<PackageProjectUrl>https://github.com/ogulcanturan/Ogu.Dal/tree/master/src/Ogu.Dal.Abstractions</PackageProjectUrl>
 	<RepositoryUrl>https://github.com/ogulcanturan/Ogu.Dal</RepositoryUrl>
-	<PackageTags>sql;mongo;redis;data-access-layer</PackageTags>
-	<Title>Abstractions for Sql, MongoDb, and Redis</Title>
+	<PackageTags>ogu-dal;abstractions;data-access-layer</PackageTags>
+	<Title>Abstractions for Ogu.Dal.*</Title>
 	<RepositoryType>git</RepositoryType>
-	<Description>This library contains abstractions for Sql, MongoDb, and Redis</Description>
+	<Description>This library contains abstractions for Ogu.Dal.*</Description>
 	<PackageIcon>ogu-logo.png</PackageIcon>
 	<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
   	<None Include="..\..\logo\ogu-logo.png" Pack="true" PackagePath="\" Visible="false" />
+  	<None Include="README.md" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
 </Project>
