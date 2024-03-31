@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+	<AssemblyName>Ogu.Dal.Redis</AssemblyName>
+	<PackageId>Ogu.Dal.Redis</PackageId>
+	<Product>Ogu.Dal.Redis</Product>
+	<Version>1.0.0</Version>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<Authors>Oğulcan TURAN</Authors>
+	<Copyright>Copyright (c) Oğulcan TURAN 2024</Copyright>
+	<PackageProjectUrl>https://github.com/ogulcanturan/Ogu.Dal/tree/master/src/Ogu.Dal.MongoDb</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/ogulcanturan/Ogu.Dal</RepositoryUrl>
+	<PackageTags>redis;mongo-repository;data-access-layer</PackageTags>
+	<Title>Structured Redis library</Title>
+	<RepositoryType>git</RepositoryType>
+	<Description>This library provides a structured repository pattern, context and abstractions for interacting with Redis databases</Description>
+	<PackageIcon>ogu-logo.png</PackageIcon>
+	<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.7.33" />
+  </ItemGroup>
+
+  <ItemGroup>
+  	<None Include="..\..\logo\ogu-logo.png" Pack="true" PackagePath="\" Visible="false" />
+  	<None Include="README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+</Project>
