@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace Sql.Sample.Api.Models.Requests.Category
+namespace MongoDb.Sample.Api.Models.Requests.Category
 {
     public class AddCategoriesRequest
     {

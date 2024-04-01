@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Ogu.Dal.Sql.Repositories
 {
-    public interface IRepository<TEntity, in TId> : IAsyncDisposable, IDisposable where TEntity : class, IBaseEntity<TId> where TId : IEquatable<TId>
+    public interface IRepository<TEntity, in TId> : IAsyncDisposable, IDisposable where TEntity : class, IBaseEntity<TId>, new() where TId : IEquatable<TId>
     {
         DbSet<TEntity> Table { get; }
         IQueryable<TEntity> AsQueryable();
@@ -73,10 +73,10 @@ namespace Ogu.Dal.Sql.Repositories
         Task<int> InstantRemoveRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
         Task<int> InstantRemoveRangeAsync(IEnumerable<TEntity> entities, bool ignoreIfNotExists, CancellationToken cancellationToken = default);
         Task<int> InstantRemoveRangeAsync(CancellationToken cancellationToken = default, params TEntity[] entities);
-        Task<int> InstantRemoveRangeAsync(bool ignoreIfNotExists, CancellationToken cancellationToken = default, params TEntity[] entities);
-        Task<int> InstantRemoveRangeAsync(CancellationToken cancellationToken = default, params TId[] ids);
-        Task<int> InstantRemoveRangeAsync(bool ignoreIfNotExists, CancellationToken cancellationToken = default, params TId[] ids);
-        Task<int> InstantRemoveAllAsync(CancellationToken cancellationToken = default);
+        Task<int> InstantRemoveRangeAsync(bool ignoreIfNotExists, CancellationToken cancellationToken, params TEntity[] entities);
+        Task<int> InstantRemoveRangeAsync(CancellationToken cancellationToken, params TId[] ids);
+        Task<int> InstantRemoveRangeAsync(bool ignoreIfNotExists, CancellationToken cancellationToken, params TId[] ids);
+        Task<int> InstantRemoveRangeAsync(CancellationToken cancellationToken = default);
         Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate = null, CancellationToken cancellationToken = default);
         Task<long> LongCountAsync(Expression<Func<TEntity, bool>> predicate = null, CancellationToken cancellationToken = default);
         Task<bool> IsAnyAsync(Expression<Func<TEntity, bool>> predicate = null, string includeProperties = null, QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery, CancellationToken cancellationToken = default);

@@ -1,10 +1,11 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using Ogu.Dal.Abstractions;
 using System;
 
 namespace Ogu.Dal.MongoDb.Entities
 {
-    public abstract class BaseEntity
+    public abstract class BaseEntity : IBaseEntity<string>
     {
         [BsonId, BsonRepresentation(BsonType.ObjectId)]
         public virtual string Id { get; set; }

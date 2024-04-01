@@ -16,7 +16,7 @@ namespace Ogu.Dal.Sql.Repositories
         private bool _disposed;
         private DatabaseProviderEnum? _databaseProvider;
         private readonly DbContext _context;
-       
+
         public Repository(DbContext context)
         {
             _context = context;
@@ -32,7 +32,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            if (!entity.Id.Equals(default))
+            if (entity.Id == null || entity.Id.Equals(default))
                 return;
 
             entity.CreatedOn = DateTime.UtcNow;
@@ -55,13 +55,13 @@ namespace Ogu.Dal.Sql.Repositories
 
         public virtual IEnumerable<TEntity> AddRange(IEnumerable<TEntity> entities)
         {
-            if(entities == null)
+            if (entities == null)
                 throw new ArgumentNullException(nameof(entities));
 
             var currentTime = DateTime.UtcNow;
 
             var entitiesAsArray = entities
-                .Where(e => e.Id.Equals(default))
+                .Where(e => e.Id == null || e.Id.Equals(default))
                 .Select(e =>
                 {
                     e.CreatedOn = currentTime;
@@ -86,7 +86,7 @@ namespace Ogu.Dal.Sql.Repositories
             var currentTime = DateTime.UtcNow;
 
             var entitiesAsArray = entities
-                .Where(e => e.Id.Equals(default))
+                .Where(e => e.Id == null || e.Id.Equals(default))
                 .Select(e =>
                 {
                     e.CreatedOn = currentTime;
@@ -112,7 +112,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            if (!entity.Id.Equals(default))
+            if (entity.Id != null && !entity.Id.Equals(default(TId)))
                 return false;
 
             entity.CreatedOn = DateTime.UtcNow;
@@ -123,7 +123,7 @@ namespace Ogu.Dal.Sql.Repositories
             {
                 return await SaveChangesAsync(cancellationToken).ConfigureAwait(false) > 0;
             }
-            catch (DbUpdateConcurrencyException) when(ignoreIfNotExist)
+            catch (DbUpdateConcurrencyException) when (ignoreIfNotExist)
             {
                 return false;
             }
@@ -143,7 +143,7 @@ namespace Ogu.Dal.Sql.Repositories
             var currentTime = DateTime.UtcNow;
 
             var entitiesAsArray = entities
-                .Where(e => e.Id.Equals(default))
+                .Where(e => e.Id == null || e.Id.Equals(default))
                 .Select(e =>
                 {
                     e.CreatedOn = currentTime;
@@ -154,16 +154,16 @@ namespace Ogu.Dal.Sql.Repositories
             if (entitiesAsArray.Length == 0)
                 return null;
 
-                Table.AddRange(entitiesAsArray);
+            Table.AddRange(entitiesAsArray);
 
-                try
-                {
-                    return await SaveChangesAsync(cancellationToken).ConfigureAwait(false) > 0 ? entitiesAsArray : null;
-                }
-                catch (DbUpdateConcurrencyException) when (ignoreIfNotExist)
-                {
-                    return null;
-                }
+            try
+            {
+                return await SaveChangesAsync(cancellationToken).ConfigureAwait(false) > 0 ? entitiesAsArray : null;
+            }
+            catch (DbUpdateConcurrencyException) when (ignoreIfNotExist)
+            {
+                return null;
+            }
         }
 
         public virtual Task<TEntity> GetAsync(TrackingActivityEnum trackingActivity, Expression<Func<TEntity, bool>> predicate = null,
@@ -184,7 +184,7 @@ namespace Ogu.Dal.Sql.Repositories
             {
                 query = IncludeProperties(includeProperties, query);
 #if !NETSTANDARD2_0
-                if(querySplittingBehavior != QuerySplittingBehavior.SingleQuery && isTrackingActivityIsInactive)
+                if (querySplittingBehavior != QuerySplittingBehavior.SingleQuery && isTrackingActivityIsInactive)
                     query = query.AsSplitQuery();
 #endif
             }
@@ -196,19 +196,19 @@ namespace Ogu.Dal.Sql.Repositories
                 query = query.Select(selectColumn);
 
             return isTrackingActivityIsInactive ?
-                 query.FirstOrDefaultWithNoLockSessionAsync(cancellationToken):
+                 query.FirstOrDefaultWithNoLockSessionAsync(cancellationToken) :
                  query.FirstOrDefaultAsync(cancellationToken);
         }
 
         public virtual Task<TEntity> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
             => Table.FindAsync(new object[] { id }, cancellationToken).AsTask();
-         
+
         public virtual IQueryable<TEntity> GetAllAsQueryable(TrackingActivityEnum trackingActivity, Expression<Func<TEntity, bool>> predicate = null,
             string includeProperties = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
             Expression<Func<TEntity, TEntity>> selectColumn = null, QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery)
         {
             IQueryable<TEntity> query = Table;
-            
+
             var isTrackingActivityIsInactive = trackingActivity == TrackingActivityEnum.Inactive;
 
             if (isTrackingActivityIsInactive)
@@ -264,11 +264,11 @@ namespace Ogu.Dal.Sql.Repositories
                 query = query.Select(selectColumn);
 
             return isTrackingActivityIsInactive ?
-                 await query.ToArrayWithNoLockSessionAsync(cancellationToken).ConfigureAwait(false):
+                 await query.ToArrayWithNoLockSessionAsync(cancellationToken).ConfigureAwait(false) :
                  await query.ToArrayAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public virtual Task<List<TEntity>> GetAllAsAsyncList(TrackingActivityEnum trackingActivity,
+        public virtual Task<IList<TEntity>> GetAllAsAsyncList(TrackingActivityEnum trackingActivity,
             Expression<Func<TEntity, bool>> predicate = null, string includeProperties = null,
             Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null,
             QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery, CancellationToken cancellationToken = default)
@@ -286,7 +286,7 @@ namespace Ogu.Dal.Sql.Repositories
             {
                 query = IncludeProperties(includeProperties, query);
 #if !NETSTANDARD2_0
-                 if(querySplittingBehavior != QuerySplittingBehavior.SingleQuery && isTrackingActivityIsInactive)
+                if (querySplittingBehavior != QuerySplittingBehavior.SingleQuery && isTrackingActivityIsInactive)
                     query = query.AsSplitQuery();
 #endif
             }
@@ -298,7 +298,7 @@ namespace Ogu.Dal.Sql.Repositories
                 query = query.Select(selectColumn);
 
             return isTrackingActivityIsInactive ?
-                query.ToListWithNoLockSessionAsync(cancellationToken):
+                query.ToListWithNoLockSessionAsync(cancellationToken) :
                 query.ToListAsync(cancellationToken);
         }
 
@@ -322,7 +322,7 @@ namespace Ogu.Dal.Sql.Repositories
             {
                 query = IncludeProperties(includeProperties, query);
 #if !NETSTANDARD2_0
-                 if(querySplittingBehavior != QuerySplittingBehavior.SingleQuery && isTrackingActivityIsInactive)
+                if (querySplittingBehavior != QuerySplittingBehavior.SingleQuery && isTrackingActivityIsInactive)
                     query = query.AsSplitQuery();
 #endif
             }
@@ -411,7 +411,7 @@ namespace Ogu.Dal.Sql.Repositories
 
             if (trackingActivity == TrackingActivityEnum.Active)
             {
-                entity = Table.Local.FirstOrDefault(e => e.Id.Equals(id));
+                entity = Table.Local.FirstOrDefault(e => e.Id != null && e.Id.Equals(id));
             }
 
             if (entity == null)
@@ -452,7 +452,7 @@ namespace Ogu.Dal.Sql.Repositories
                 entities = Table.Local.Where(e => ids.Contains(e.Id)).ToArray();
             }
 
-            if (entities == null) 
+            if (entities == null)
             {
                 entities = ids.Select(id => new TEntity { Id = id }).ToArray();
 
@@ -517,7 +517,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            if (entity.Id.Equals(default))
+            if (entity.Id == null || entity.Id.Equals(default))
                 return;
 
             Table.Update(entity);
@@ -530,7 +530,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (updateAction == null)
                 throw new ArgumentNullException(nameof(updateAction));
 
-            if (entity.Id.Equals(default))
+            if (entity.Id == null || entity.Id.Equals(default))
                 return;
 
             if (trackingActivity == TrackingActivityEnum.Inactive)
@@ -546,14 +546,14 @@ namespace Ogu.Dal.Sql.Repositories
             if (updateAction == null)
                 throw new ArgumentNullException(nameof(updateAction));
 
-            if (id.Equals(default))
+            if (id == null || id.Equals(default))
                 return null;
 
             TEntity entity = default;
 
             if (trackingActivity == TrackingActivityEnum.Active)
             {
-                entity = Table.Local.FirstOrDefault(e => e.Id.Equals(id));
+                entity = Table.Local.FirstOrDefault(e => e.Id != null && e.Id.Equals(id));
             }
 
             if (entity == null)
@@ -578,7 +578,7 @@ namespace Ogu.Dal.Sql.Repositories
             var currentTime = DateTime.UtcNow;
 
             var entitiesAsArray = entities
-                .Where(e => !e.Id.Equals(default))
+                .Where(e => e.Id != null && !e.Id.Equals(default))
                 .Select(e =>
                 {
                     e.UpdatedOn = currentTime;
@@ -587,7 +587,7 @@ namespace Ogu.Dal.Sql.Repositories
                 .ToArray();
 
             if (entitiesAsArray.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             Table.UpdateRange(entitiesAsArray);
 
@@ -602,7 +602,7 @@ namespace Ogu.Dal.Sql.Repositories
             var currentTime = DateTime.UtcNow;
 
             var entitiesAsArray = entities
-                .Where(e => !e.Id.Equals(default))
+                .Where(e => e.Id != null && !e.Id.Equals(default))
                 .Select(e =>
                 {
                     e.UpdatedOn = currentTime;
@@ -611,7 +611,7 @@ namespace Ogu.Dal.Sql.Repositories
                 .ToArray();
 
             if (entities.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             Table.UpdateRange(entitiesAsArray);
 
@@ -623,10 +623,12 @@ namespace Ogu.Dal.Sql.Repositories
             if (ids == null)
                 throw new ArgumentNullException(nameof(ids));
 
-            var entitiesAsArray = ids.Where(id => !id.Equals(default)).Select(id => new TEntity { Id = id }).ToArray();
+            var entitiesAsArray = ids
+                .Where(id => id != null && !id.Equals(default))
+                .Select(id => new TEntity { Id = id }).ToArray();
 
             if (entitiesAsArray.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             Table.AttachRange(entitiesAsArray);
 
@@ -650,17 +652,19 @@ namespace Ogu.Dal.Sql.Repositories
             if (updateAction == null)
                 throw new ArgumentNullException(nameof(updateAction));
 
-            var entitiesAsArray = ids.Where(id => !id.Equals(default)).Select(id => new TEntity { Id = id }).ToArray();
+            var entitiesAsArray = ids
+                .Where(id => id != null && !id.Equals(default))
+                .Select(id => new TEntity { Id = id }).ToArray();
 
             if (entitiesAsArray.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             var currentTime = DateTime.UtcNow;
-            
+
             foreach (var entity in entitiesAsArray)
             {
                 updateAction(entity);
-            
+
                 entity.UpdatedOn = currentTime;
             }
 
@@ -683,7 +687,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (updateFunc == null)
                 throw new ArgumentNullException(nameof(updateFunc));
 
-            if (entity.Id.Equals(default))
+            if (entity.Id == null || entity.Id.Equals(default))
                 return false;
 
             if (trackingActivity == TrackingActivityEnum.Inactive)
@@ -719,7 +723,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (updateAction == null)
                 throw new ArgumentNullException(nameof(updateAction));
 
-            if (entity.Id.Equals(default))
+            if (entity.Id == null || entity.Id.Equals(default))
                 return false;
 
             if (trackingActivity == TrackingActivityEnum.Inactive)
@@ -751,14 +755,14 @@ namespace Ogu.Dal.Sql.Repositories
             if (updateFunc == null)
                 throw new ArgumentNullException(nameof(updateFunc));
 
-            if (id.Equals(default))
+            if (id == null || id.Equals(default))
                 return null;
 
             TEntity entity = default;
 
             if (trackingActivity == TrackingActivityEnum.Active)
             {
-                entity = Table.Local.FirstOrDefault(e => e.Id.Equals(id));
+                entity = Table.Local.FirstOrDefault(e => e.Id != null && e.Id.Equals(id));
             }
 
             if (entity == null)
@@ -793,17 +797,17 @@ namespace Ogu.Dal.Sql.Repositories
             if (updateAction == null)
                 throw new ArgumentNullException(nameof(updateAction));
 
-            if (id.Equals(default))
+            if (id == null || id.Equals(default))
                 return null;
 
             TEntity entity = default;
 
             if (trackingActivity == TrackingActivityEnum.Active)
             {
-                entity = Table.Local.FirstOrDefault(e => e.Id.Equals(id));
+                entity = Table.Local.FirstOrDefault(e => e.Id != null && e.Id.Equals(id));
             }
 
-            if(entity == null)
+            if (entity == null)
             {
                 entity = new TEntity { Id = id };
 
@@ -836,10 +840,12 @@ namespace Ogu.Dal.Sql.Repositories
             if (entities == null)
                 throw new ArgumentNullException(nameof(entities));
 
-            var entitiesAsArray = entities.Where(e => !e.Id.Equals(default)).ToArray();
+            var entitiesAsArray = entities
+                .Where(e => e.Id != null && !e.Id.Equals(default))
+                .ToArray();
 
             if (entitiesAsArray.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             if (trackingActivity == TrackingActivityEnum.Inactive)
                 Table.AttachRange(entitiesAsArray);
@@ -859,7 +865,7 @@ namespace Ogu.Dal.Sql.Repositories
             }
             catch (DbUpdateConcurrencyException) when (ignoreIfNotExists)
             {
-                return null;
+                return Enumerable.Empty<TEntity>();
             }
         }
 
@@ -875,10 +881,12 @@ namespace Ogu.Dal.Sql.Repositories
             if (entities == null)
                 throw new ArgumentNullException(nameof(entities));
 
-            var entitiesAsArray = entities.Where(e => !e.Id.Equals(default)).ToArray();
+            var entitiesAsArray = entities
+                .Where(e => e.Id != null && !e.Id.Equals(default))
+                .ToArray();
 
             if (entitiesAsArray.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             if (trackingActivity == TrackingActivityEnum.Inactive)
                 Table.AttachRange(entitiesAsArray);
@@ -900,7 +908,7 @@ namespace Ogu.Dal.Sql.Repositories
             }
             catch (DbUpdateConcurrencyException) when (ignoreIfNotExists)
             {
-                return null;
+                return Enumerable.Empty<TEntity>();
             }
         }
 
@@ -917,10 +925,12 @@ namespace Ogu.Dal.Sql.Repositories
             if (ids == null)
                 throw new ArgumentNullException(nameof(ids));
 
-            var entitiesAsArray = ids.Where(id => !id.Equals(default)).Select(id => new TEntity { Id = id }).ToArray();
+            var entitiesAsArray = ids
+                .Where(id => id != null && !id.Equals(default))
+                .Select(id => new TEntity { Id = id }).ToArray();
 
             if (entitiesAsArray.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             Table.AttachRange(entitiesAsArray);
 
@@ -939,12 +949,12 @@ namespace Ogu.Dal.Sql.Repositories
             }
             catch (DbUpdateConcurrencyException) when (ignoreIfNotExists)
             {
-                return null;
+                return Enumerable.Empty<TEntity>();
             }
         }
 
         public virtual Task<IEnumerable<TEntity>> InstantUpdateRangeAsync(TrackingActivityEnum trackingActivity,
-            IEnumerable<TId> ids, Action<TEntity> updateAction, 
+            IEnumerable<TId> ids, Action<TEntity> updateAction,
             CancellationToken cancellationToken = default)
         {
             return InstantUpdateRangeAsync(trackingActivity, ids, updateAction, true, cancellationToken);
@@ -958,10 +968,12 @@ namespace Ogu.Dal.Sql.Repositories
             if (updateAction == null)
                 throw new ArgumentNullException(nameof(updateAction));
 
-            var entitiesAsArray = ids.Where(id => !id.Equals(default)).Select(id => new TEntity { Id = id }).ToArray();
+            var entitiesAsArray = ids
+                .Where(id => id != null && !id.Equals(default))
+                .Select(id => new TEntity { Id = id }).ToArray();
 
             if (entitiesAsArray.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             Table.AttachRange(entitiesAsArray);
 
@@ -980,7 +992,7 @@ namespace Ogu.Dal.Sql.Repositories
             }
             catch (DbUpdateConcurrencyException) when (ignoreIfNotExists)
             {
-                return null;
+                return Enumerable.Empty<TEntity>();
             }
         }
 
@@ -989,13 +1001,13 @@ namespace Ogu.Dal.Sql.Repositories
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            if (!entity.Id.Equals(default))
+            if (entity.Id != null && !entity.Id.Equals(default))
                 Table.Remove(entity);
         }
 
         public virtual void Remove(TId id)
         {
-            if (!id.Equals(default))
+            if (id != null && !id.Equals(default))
                 Table.Remove(new TEntity { Id = id });
         }
 
@@ -1004,31 +1016,38 @@ namespace Ogu.Dal.Sql.Repositories
             if (entities == null)
                 throw new ArgumentNullException(nameof(entities));
 
-            var entitiesAsArray = entities.Where(e => !e.Id.Equals(default)).ToArray();
+            var entitiesAsArray = entities
+                .Where(e => e.Id != null && !e.Id.Equals(default))
+                .ToArray();
 
-            if(entitiesAsArray.Length > 0)
+            if (entitiesAsArray.Length > 0)
                 Table.RemoveRange(entitiesAsArray);
         }
 
         public virtual void RemoveRange(params TEntity[] entities)
         {
-            if(entities == null)
+            if (entities == null)
                 throw new ArgumentNullException(nameof(entities));
 
-            var entitiesAsArray = entities.Where(e => !e.Id.Equals(default)).ToArray();
-            
-            if(entitiesAsArray.Length > 0) 
+            var entitiesAsArray = entities
+                .Where(e => e.Id != null && !e.Id.Equals(default))
+                .ToArray();
+
+            if (entitiesAsArray.Length > 0)
                 Table.RemoveRange(entitiesAsArray);
         }
 
         public virtual void RemoveRange(params TId[] ids)
         {
-            if(ids == null)
+            if (ids == null)
                 throw new ArgumentNullException(nameof(ids));
 
-            var filteredEntities = ids.Where(id => !id.Equals(default)).Select(id => new TEntity { Id = id }).ToArray();
+            var filteredEntities = ids
+                .Where(id => id != null && !id.Equals(default))
+                .Select(id => new TEntity { Id = id })
+                .ToArray();
 
-            if(filteredEntities.Length > 0)
+            if (filteredEntities.Length > 0)
                 Table.RemoveRange(filteredEntities);
         }
 
@@ -1043,7 +1062,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            if (entity.Id.Equals(default))
+            if (entity.Id == null || entity.Id.Equals(default))
                 return false;
 
             Table.Remove(entity);
@@ -1066,7 +1085,7 @@ namespace Ogu.Dal.Sql.Repositories
 
         public virtual async Task<bool> InstantRemoveAsync(TId id, bool ignoreIfNotExist, CancellationToken cancellationToken = default)
         {
-            if (id.Equals(default))
+            if (id == null || id.Equals(default))
                 return false;
 
             Table.Remove(new TEntity { Id = id });
@@ -1091,7 +1110,9 @@ namespace Ogu.Dal.Sql.Repositories
             if (entities == null)
                 throw new ArgumentNullException(nameof(entities));
 
-            var entitiesAsArray = entities.Where(e => !e.Id.Equals(default)).ToArray();
+            var entitiesAsArray = entities
+                .Where(e => e.Id != null && !e.Id.Equals(default))
+                .ToArray();
 
             if (entitiesAsArray.Length == 0)
                 return Task.FromResult(0);
@@ -1108,17 +1129,19 @@ namespace Ogu.Dal.Sql.Repositories
             }
         }
 
-        public virtual Task<int> InstantRemoveRangeAsync(CancellationToken cancellationToken = default, params TEntity[] entities)
+        public virtual Task<int> InstantRemoveRangeAsync(CancellationToken cancellationToken, params TEntity[] entities)
         {
             return InstantRemoveRangeAsync(true, cancellationToken, entities);
         }
 
-        public virtual Task<int> InstantRemoveRangeAsync(bool ignoreIfNotExists, CancellationToken cancellationToken = default, params TEntity[] entities)
+        public virtual Task<int> InstantRemoveRangeAsync(bool ignoreIfNotExists, CancellationToken cancellationToken, params TEntity[] entities)
         {
             if (entities == null)
                 throw new ArgumentNullException(nameof(entities));
 
-            var entitiesAsArray = entities.Where(e => !e.Id.Equals(default)).ToArray();
+            var entitiesAsArray = entities
+                .Where(e => e.Id != null && !e.Id.Equals(default))
+                .ToArray();
 
             if (entitiesAsArray.Length == 0)
                 return Task.FromResult(0);
@@ -1140,17 +1163,19 @@ namespace Ogu.Dal.Sql.Repositories
             return InstantRemoveRangeAsync(true, cancellationToken, ids);
         }
 
-        public virtual Task<int> InstantRemoveRangeAsync(bool ignoreIfNotExists, CancellationToken cancellationToken = default, params TId[] ids)
+        public virtual Task<int> InstantRemoveRangeAsync(bool ignoreIfNotExists, CancellationToken cancellationToken, params TId[] ids)
         {
             if (ids == null)
                 throw new ArgumentNullException(nameof(ids));
 
-            var filteredEntities = ids.Where(id => !id.Equals(default)).Select(id => new TEntity { Id = id }).ToArray();
+            var entitiesAsArray = ids
+                .Where(id => id != null && !id.Equals(default))
+                .Select(id => new TEntity { Id = id }).ToArray();
 
-            if (filteredEntities.Length == 0)
+            if (entitiesAsArray.Length == 0)
                 return Task.FromResult(0);
 
-            Table.RemoveRange(filteredEntities);
+            Table.RemoveRange(entitiesAsArray);
 
             try
             {
@@ -1162,7 +1187,7 @@ namespace Ogu.Dal.Sql.Repositories
             }
         }
 
-        public virtual Task<int> InstantRemoveAllAsync(CancellationToken cancellationToken = default)
+        public virtual Task<int> InstantRemoveRangeAsync(CancellationToken cancellationToken = default)
         {
             var tableName = _context.GetTableNameOrDefault<TEntity>();
 
@@ -1215,7 +1240,7 @@ namespace Ogu.Dal.Sql.Repositories
 
         public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken = default,
             TrackingActivityEnum trackingActivity = TrackingActivityEnum.Inactive)
-            =>  _context.SaveChangesAsync(trackingActivity, cancellationToken);
+            => _context.SaveChangesAsync(trackingActivity, cancellationToken);
 
         public virtual Task<int> SaveChangesWithDateAsync(CancellationToken cancellationToken = default,
             TrackingActivityEnum trackingActivity = TrackingActivityEnum.Inactive)

@@ -1,12 +1,11 @@
-﻿using Ogu.Dal.Abstractions;
-using Sql.Sample.Api.Models.Dtos;
-using Sql.Sample.Api.Models.Requests;
-using Sql.Sample.Api.Models.Requests.Category;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDb.Sample.Api.Models.Dtos;
+using MongoDb.Sample.Api.Models.Requests.Category;
+using Ogu.Dal.Abstractions;
 
-namespace Sql.Sample.Api.Services.Interfaces
+namespace MongoDb.Sample.Api.Services.Interfaces
 {
     public interface ICategoryService
     {
@@ -18,7 +17,7 @@ namespace Sql.Sample.Api.Services.Interfaces
         Task<CategoryDto> UpdateAsync(UpdateCategoryRequest request, CancellationToken cancellationToken = default);
         Task<IEnumerable<CategoryDto>> UpdateRangeAsync(UpdateCategoriesRequest request, CancellationToken cancellationToken = default);
         Task<bool> RemoveAsync(RemoveRequest request, CancellationToken cancellationToken = default);
-        Task<int> RemoveRangeAsync(CancellationToken cancellationToken = default);
+        Task<long> RemoveRangeAsync(CancellationToken cancellationToken = default);
         Task<bool> IsCategoryExistAsync(string name, CancellationToken cancellationToken);
     }
 }

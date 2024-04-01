@@ -9,6 +9,6 @@ namespace Sql.Sample.Api.Models.Requests.Category
         public int Id { get; set; }
 
         [FromQuery]
-        public bool FetchFromDb { get; set; }
+        public bool FirstFetchFromDb { get; set; }
     }
 }

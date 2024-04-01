@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Sql.Sample.Api.Models.Requests.Category;
-using Sql.Sample.Api.Services.Interfaces;
+using MongoDb.Sample.Api.Models.Requests.Category;
+using MongoDb.Sample.Api.Services.Interfaces;
 using System.Threading;
 using System.Threading.Tasks;
 

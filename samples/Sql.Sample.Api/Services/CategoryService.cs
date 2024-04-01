@@ -4,7 +4,6 @@ using Ogu.Dal.Sql.Entities;
 using Sql.Sample.Api.Domain.Entities;
 using Sql.Sample.Api.Domain.Repositories.Interfaces;
 using Sql.Sample.Api.Models.Dtos;
-using Sql.Sample.Api.Models.Requests;
 using Sql.Sample.Api.Models.Requests.Category;
 using Sql.Sample.Api.Services.Interfaces;
 using System.Collections.Generic;
@@ -88,7 +87,7 @@ namespace Sql.Sample.Api.Services
             }
             else
             {
-                // To Update entity without fetching db (One call - Faster) - will throw an exception if it couldn't find!
+                // To Update entity without fetching db (One call - Faster) - will return default value if it couldn't find!
 
                 entity = await _categoryRepository.InstantUpdateAsync(TrackingActivityEnum.Inactive, request.Id, c => c.Name = request.Body.Name, cancellationToken);
             }
@@ -98,17 +97,14 @@ namespace Sql.Sample.Api.Services
 
         public async Task<IEnumerable<CategoryDto>> UpdateRangeAsync(UpdateCategoriesRequest request, CancellationToken cancellationToken = default)
         {
-            IEnumerable<Category> entity;
+            IEnumerable<Category> entities;
 
             if (request.FetchFromDb)
             {
                 // First fetch db then update (Two calls - Slower)
-                entity = await _categoryRepository.GetAllAsAsyncArray(TrackingActivityEnum.Active, c => request.Body.Ids.Contains(c.Id), cancellationToken: cancellationToken);
+                entities = await _categoryRepository.GetAllAsAsyncArray(TrackingActivityEnum.Active, c => request.Body.Ids.Contains(c.Id), cancellationToken: cancellationToken);
 
-                if (entity == null)
-                    return null;
-
-                await _categoryRepository.InstantUpdateRangeAsync(TrackingActivityEnum.Active, entity,
+                await _categoryRepository.InstantUpdateRangeAsync(TrackingActivityEnum.Active, entities,
                     c => c.Name = request.Body.Name, cancellationToken: cancellationToken);
 
                 await _categoryRepository.SaveChangesWithDateAsync(cancellationToken);
@@ -116,15 +112,15 @@ namespace Sql.Sample.Api.Services
             else
             {
                 // To Update entity without fetching db (One call - Faster) - will return default value if it couldn't find!
-                entity = await _categoryRepository.InstantUpdateRangeAsync(TrackingActivityEnum.Inactive, request.Body.Ids, c => c.Name = request.Body.Name, cancellationToken: cancellationToken);
+                entities = await _categoryRepository.InstantUpdateRangeAsync(TrackingActivityEnum.Inactive, request.Body.Ids, c => c.Name = request.Body.Name, cancellationToken: cancellationToken);
             }
 
-            return entity?.ToDto();
+            return entities.ToDto();
         }
 
         public async Task<bool> RemoveAsync(RemoveRequest request, CancellationToken cancellationToken = default)
         {
-            if (request.FetchFromDb)
+            if (request.FirstFetchFromDb)
             {
                 // First fetch db then update (Two calls - Slower)
 
@@ -146,7 +142,7 @@ namespace Sql.Sample.Api.Services
 
         public Task<int> RemoveAllAsync(CancellationToken cancellationToken = default)
         {
-            return _categoryRepository.InstantRemoveAllAsync(cancellationToken);
+            return _categoryRepository.InstantRemoveRangeAsync(cancellationToken);
         }
     }
 }
