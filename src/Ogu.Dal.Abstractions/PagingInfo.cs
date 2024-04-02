@@ -2,13 +2,13 @@
 
 namespace Ogu.Dal.Abstractions
 {
-    public interface IPagingInfo<TType>
+    public interface IPagingInfo<out TType>
     {
-        TType PageIndex { get; set; }
-        TType ItemsPerPage { get; set; }
-        TType TotalItems { get; set; }
-        TType TotalPages { get; }
-        TType PageIndexItems { get; }
+        TType PageIndex { get; }
+        TType PageIndexItemsCount { get; }
+        TType ItemsPerPage { get; }
+        TType TotalItemsCount { get; }
+        TType TotalPagesCount { get; }
         TType RangeOfPages { get; }
         TType StartIndex { get; }
         TType FinishIndex { get; }
@@ -18,51 +18,51 @@ namespace Ogu.Dal.Abstractions
 
     namespace x86
     {
-        public struct PagingInfo : IPagingInfo<int>
+        public readonly struct PagingInfo : IPagingInfo<int>
         {
-            public PagingInfo(int pageIndex, int itemsPerPage, int totalItems, int rangeOfPages)
+            public PagingInfo(int pageIndex, int pageIndexItemsCount, int itemsPerPage, int totalItemsCount, int rangeOfPages)
             {
                 PageIndex = pageIndex;
+                PageIndexItemsCount = pageIndexItemsCount;
                 ItemsPerPage = itemsPerPage;
-                TotalItems = totalItems;
+                TotalItemsCount = totalItemsCount;
                 RangeOfPages = rangeOfPages;
-            }
 
-            public int PageIndex { get; set; }
-            public int ItemsPerPage { get; set; }
-            public int TotalItems { get; set; }
-            public int TotalPages => ItemsPerPage > 0 ? (int)Math.Ceiling((double)TotalItems / ItemsPerPage) : 1;
-            public int RangeOfPages { get; set; }
-            public int StartIndex => Math.Max(PageIndex - RangeOfPages, 1);
-            public int FinishIndex => Math.Min(PageIndex + RangeOfPages, TotalPages);
-            public bool HasNextPage => PageIndex < TotalPages;
-            public bool HasPreviousPage => PageIndex > 1;
-            public int PageIndexItems
-            {
-                get
+                if (itemsPerPage < 1 || PageIndex < 1)
                 {
-                    if (ItemsPerPage < 1 || PageIndex < 1)
-                    {
-                        PageIndex = 1;
-                        return ItemsPerPage = TotalItems;
-                    }
+                    PageIndex = 1;
 
-                    if (HasNextPage)
-                        return ItemsPerPage;
-
-                    var remainder = TotalItems % ItemsPerPage;
-                    return remainder == 0 && TotalItems > 0 ? ItemsPerPage : remainder;
+                    if(TotalItemsCount > 0)
+                        ItemsPerPage = TotalItemsCount;
                 }
+
+                TotalPagesCount = TotalItemsCount > 0 ? (ItemsPerPage > 0 ? (int)Math.Ceiling((double)TotalItemsCount / ItemsPerPage) : 1) : 0;
+
+                StartIndex = Math.Max(PageIndex - RangeOfPages, 1);
+                FinishIndex = Math.Min(PageIndex + RangeOfPages, TotalPagesCount);
+                HasNextPage = PageIndex < TotalPagesCount;
+                HasPreviousPage = PageIndex > 1;
             }
+
+            public int PageIndex { get; }
+            public int PageIndexItemsCount { get; }
+            public int ItemsPerPage { get; }
+            public int TotalItemsCount { get; }
+            public int TotalPagesCount { get; }
+            public int RangeOfPages { get; }
+            public int StartIndex { get; }
+            public int FinishIndex { get; }
+            public bool HasNextPage { get; }
+            public bool HasPreviousPage { get; }
         }
 
         public struct PagingInfoDto : IPagingInfo<int>
         {
             public int PageIndex { get; set; }
+            public int PageIndexItemsCount { get; set; }
             public int ItemsPerPage { get; set; }
-            public int TotalItems { get; set; }
-            public int TotalPages { get; set; }
-            public int PageIndexItems { get; set; }
+            public int TotalItemsCount { get; set; }
+            public int TotalPagesCount { get; set; }
             public int RangeOfPages { get; set; }
             public int StartIndex { get; set; }
             public int FinishIndex { get; set; }
@@ -73,51 +73,51 @@ namespace Ogu.Dal.Abstractions
 
     namespace x64
     {
-        public struct PagingInfo : IPagingInfo<long>
+        public readonly struct PagingInfo : IPagingInfo<long>
         {
-            public PagingInfo(long pageIndex, long itemsPerPage, long totalItems, long rangeOfPages)
+               public PagingInfo(long pageIndex, long pageIndexItemsCount, long itemsPerPage, long totalItemsCount, long rangeOfPages)
             {
                 PageIndex = pageIndex;
+                PageIndexItemsCount = pageIndexItemsCount;
                 ItemsPerPage = itemsPerPage;
-                TotalItems = totalItems;
+                TotalItemsCount = totalItemsCount;
                 RangeOfPages = rangeOfPages;
-            }
 
-            public long PageIndex { get; set; }
-            public long ItemsPerPage { get; set; }
-            public long TotalItems { get; set; }
-            public long TotalPages => ItemsPerPage > 0 ? (long)Math.Ceiling((decimal)TotalItems / ItemsPerPage) : 1;
-            public long RangeOfPages { get; set; }
-            public long StartIndex => Math.Max(PageIndex - RangeOfPages, 1);
-            public long FinishIndex => Math.Min(PageIndex + RangeOfPages, TotalPages);
-            public bool HasNextPage => PageIndex < TotalPages;
-            public bool HasPreviousPage => PageIndex > 1;
-            public long PageIndexItems
-            {
-                get
+                if (itemsPerPage < 1 || PageIndex < 1)
                 {
-                    if (ItemsPerPage < 1 || PageIndex < 1)
-                    {
-                        PageIndex = 1;
-                        return ItemsPerPage = TotalItems;
-                    }
+                    PageIndex = 1;
 
-                    if (HasNextPage)
-                        return ItemsPerPage;
-
-                    var remainder = TotalItems % ItemsPerPage;
-                    return remainder == 0 && TotalItems > 0 ? ItemsPerPage : remainder;
+                    if(TotalItemsCount > 0)
+                        ItemsPerPage = TotalItemsCount;
                 }
+
+                TotalPagesCount = TotalItemsCount > 0 ? (ItemsPerPage > 0 ? (long)Math.Ceiling((decimal)TotalItemsCount / ItemsPerPage) : 1) : 0;
+
+                StartIndex = Math.Max(PageIndex - RangeOfPages, 1);
+                FinishIndex = Math.Min(PageIndex + RangeOfPages, TotalPagesCount);
+                HasNextPage = PageIndex < TotalPagesCount;
+                HasPreviousPage = PageIndex > 1;
             }
+
+            public long PageIndex { get; }
+            public long PageIndexItemsCount { get; }
+            public long ItemsPerPage { get; }
+            public long TotalItemsCount { get; }
+            public long TotalPagesCount { get; }
+            public long RangeOfPages { get; }
+            public long StartIndex { get; }
+            public long FinishIndex { get; }
+            public bool HasNextPage { get; }
+            public bool HasPreviousPage { get; }
         }
 
         public struct PagingInfoDto : IPagingInfo<long>
         {
             public long PageIndex { get; set; }
+            public long PageIndexItemsCount { get; set; }
             public long ItemsPerPage { get; set; }
-            public long TotalItems { get; set; }
-            public long TotalPages { get; set; }
-            public long PageIndexItems { get; set; }
+            public long TotalItemsCount { get; set; }
+            public long TotalPagesCount { get; set; }
             public long RangeOfPages { get; set; }
             public long StartIndex { get; set; }
             public long FinishIndex { get; set; }

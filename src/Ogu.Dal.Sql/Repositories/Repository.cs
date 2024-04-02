@@ -268,7 +268,7 @@ namespace Ogu.Dal.Sql.Repositories
                  await query.ToArrayAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public virtual Task<IList<TEntity>> GetAllAsAsyncList(TrackingActivityEnum trackingActivity,
+        public virtual async Task<IList<TEntity>> GetAllAsAsyncList(TrackingActivityEnum trackingActivity,
             Expression<Func<TEntity, bool>> predicate = null, string includeProperties = null,
             Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null,
             QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery, CancellationToken cancellationToken = default)
@@ -298,8 +298,8 @@ namespace Ogu.Dal.Sql.Repositories
                 query = query.Select(selectColumn);
 
             return isTrackingActivityIsInactive ?
-                query.ToListWithNoLockSessionAsync(cancellationToken) :
-                query.ToListAsync(cancellationToken);
+                await query.ToListWithNoLockSessionAsync(cancellationToken) :
+                await query.ToListAsync(cancellationToken);
         }
 
         public virtual Task<TEntity[]> GetAllAsAsyncArray(TrackingActivityEnum trackingActivity,
@@ -869,9 +869,7 @@ namespace Ogu.Dal.Sql.Repositories
             }
         }
 
-        public virtual Task<IEnumerable<TEntity>> InstantUpdateRangeAsync(TrackingActivityEnum trackingActivity,
-            IEnumerable<TEntity> entities, Action<TEntity> updateAction,
-            CancellationToken cancellationToken = default)
+        public virtual Task<IEnumerable<TEntity>> InstantUpdateRangeAsync(TrackingActivityEnum trackingActivity, IEnumerable<TEntity> entities, Action<TEntity> updateAction, CancellationToken cancellationToken = default)
         {
             return InstantUpdateRangeAsync(trackingActivity, entities, updateAction, true, cancellationToken);
         }

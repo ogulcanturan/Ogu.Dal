@@ -1,4 +1,4 @@
-﻿namespace MongoDb.Sample.Api.Models.Settings
+﻿namespace MongoDb.Sample.Api.Settings
 {
     public class DbSettings
     {

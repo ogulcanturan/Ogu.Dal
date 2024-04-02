@@ -5,17 +5,18 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using MongoDb.Sample.Api;
-using MongoDb.Sample.Api.Domain;
 using MongoDb.Sample.Api.Domain.Repositories.Interfaces;
 using MongoDb.Sample.Api.Services;
+using MongoDb.Sample.Api.Settings;
 using System;
 using System.IO;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
-//mongodb://sa:1$1!11aS@localhost:27017
-builder.Services.AddDomain("mongodb://sa:s123!$aS@localhost:27017", "Sample");
-builder.Services.AddServices();
+
+var dbSettings = new DbSettings { ConnectionString = "mongodb://sa:s123!$aS@localhost:27017", Database = "Sample" };
+
+builder.Services.AddServices(dbSettings);
 
 builder.Services.AddLogging(cfg => cfg.AddSimpleConsole(opts =>
 {
@@ -49,6 +50,5 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-
 
 app.Run();

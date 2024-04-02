@@ -35,9 +35,9 @@ namespace Sql.Sample.Api.Controllers
         /// Get categories
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetAll(bool includeProducts, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetAll(GetAllCategoriesRequest request, CancellationToken cancellationToken = default)
         {
-            var result = await _categoryService.GetAllAsync(includeProducts, cancellationToken);
+            var result = await _categoryService.GetAllAsync(request, cancellationToken);
 
             return Ok(result);
         }

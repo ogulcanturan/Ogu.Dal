@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MongoDb.Sample.Api.Domain.Repositories;
 using MongoDb.Sample.Api.Domain.Repositories.Interfaces;
-using MongoDb.Sample.Api.Models.Settings;
+using MongoDb.Sample.Api.Settings;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Events;
@@ -12,15 +12,17 @@ namespace MongoDb.Sample.Api.Domain
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddDomain(this IServiceCollection services, string connectionString, string database)
+        public static IServiceCollection AddDomain(this IServiceCollection services, DbSettings dbSettings)
         {
             ArgumentNullException.ThrowIfNull(services);
-            ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
-            ArgumentException.ThrowIfNullOrWhiteSpace(database);
+            ArgumentNullException.ThrowIfNull(dbSettings);
+            ArgumentException.ThrowIfNullOrWhiteSpace(dbSettings.ConnectionString);
+            ArgumentException.ThrowIfNullOrWhiteSpace(dbSettings.Database);
+
 
             services.AddSingleton<IMongoClient>(sp =>
             {
-                var mongoClientSettings = MongoClientSettings.FromConnectionString(connectionString);
+                var mongoClientSettings = MongoClientSettings.FromConnectionString(dbSettings.ConnectionString);
 
 #if DEBUG
                 var logger = sp.GetRequiredService<ILogger<MongoClient>>();
@@ -36,7 +38,7 @@ namespace MongoDb.Sample.Api.Domain
                 return new MongoClient(mongoClientSettings);
             });
 
-            services.AddSingleton(_ => new DbSettings { ConnectionString = connectionString, Database = database });
+            services.AddSingleton(dbSettings);
 
             services.AddSingleton<ICategoryRepository, CategoryRepository>();
             services.AddSingleton<IProductRepository, ProductRepository>();

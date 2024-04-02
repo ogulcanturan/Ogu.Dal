@@ -18,32 +18,26 @@ namespace Ogu.Dal.Abstractions
             Items = Enumerable.Empty<TModel>();
         }
 
-        public Paginated(int pageIndex, int itemsPerPage, int totalItems, int rangeOfPages, TModel[] entities)
+        public Paginated(int pageIndex, int itemsPerPage, int totalItems, int rangeOfPages, TModel[] items)
         {
-            Items = entities ?? Array.Empty<TModel>();
+            Items = items = items ?? Array.Empty<TModel>();
 
-            PagingInfo = new x86.PagingInfo(pageIndex, itemsPerPage, totalItems, rangeOfPages);
+            PagingInfo = new x86.PagingInfo(pageIndex, items.Length, itemsPerPage, totalItems, rangeOfPages);
         }
 
-        public Paginated(int pageIndex, int itemsPerPage, int totalItems, int rangeOfPages, IList<TModel> entities)
+        public Paginated(int pageIndex, int itemsPerPage, int totalItems, int rangeOfPages, IList<TModel> items)
         {
-            Items = entities ?? new List<TModel>();
+            Items = items = items ?? new List<TModel>();
 
-            PagingInfo = new x86.PagingInfo(pageIndex, itemsPerPage, totalItems, rangeOfPages);
+            PagingInfo = new x86.PagingInfo(pageIndex, items.Count, itemsPerPage, totalItems, rangeOfPages);
         }
 
-        public Paginated(int totalItems, TModel[] entities)
+        public Paginated(int totalItems, TModel[] items) : this(1, totalItems, totalItems, 0, items)
         {
-            Items = entities ?? Array.Empty<TModel>();
-
-            PagingInfo = new x86.PagingInfo(1, totalItems, totalItems, 0);
         }
 
-        public Paginated(int totalItems, IList<TModel> entities)
+        public Paginated(int totalItems, IList<TModel> items) : this(1, totalItems, totalItems, 0, items)
         {
-            Items = entities ?? new List<TModel>();
-
-            PagingInfo = new x86.PagingInfo(1, totalItems, totalItems, 0);
         }
 
         public IPagingInfo<int> PagingInfo { get; }
@@ -52,22 +46,9 @@ namespace Ogu.Dal.Abstractions
 
     public class PaginatedDto<TDto> : IPaginated<TDto>
     {
-        public PaginatedDto() { }
         public PaginatedDto(IPagingInfo<int> pagingInfo, IEnumerable<TDto> items)
         {
-            PagingInfo = new x86.PagingInfoDto
-            {
-                PageIndexItems = pagingInfo.PageIndexItems,
-                PageIndex = pagingInfo.PageIndex,
-                ItemsPerPage = pagingInfo.ItemsPerPage,
-                TotalItems = pagingInfo.TotalItems,
-                TotalPages = pagingInfo.TotalPages,
-                HasNextPage = pagingInfo.HasNextPage,
-                HasPreviousPage = pagingInfo.HasPreviousPage,
-                RangeOfPages = pagingInfo.RangeOfPages,
-                FinishIndex = pagingInfo.FinishIndex,
-                StartIndex = pagingInfo.StartIndex,
-            };
+            PagingInfo = pagingInfo;
             Items = items;
         }
 

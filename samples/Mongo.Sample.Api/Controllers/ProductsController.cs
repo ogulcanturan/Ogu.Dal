@@ -1,7 +1,7 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoDb.Sample.Api.Services.Interfaces;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MongoDb.Sample.Api.Controllers
 {

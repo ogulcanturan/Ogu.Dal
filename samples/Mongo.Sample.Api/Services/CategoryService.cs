@@ -4,8 +4,10 @@ using MongoDb.Sample.Api.Models.Dtos;
 using MongoDb.Sample.Api.Models.Requests.Category;
 using MongoDb.Sample.Api.Services.Interfaces;
 using Ogu.Dal.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,11 +31,19 @@ namespace MongoDb.Sample.Api.Services
             return entity?.ToDto();
         }
 
-        public async Task<IEnumerable<CategoryDto>> GetAllAsync(bool includeProducts, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<CategoryDto>> GetAllAsync(GetAllCategoriesRequest request, CancellationToken cancellationToken = default)
         {
-            var includeProperties = includeProducts ? nameof(Category.Products) : null;
+            var includeProperties = request.IncludeProducts ? nameof(Category.Products) : null;
 
-            var entities= await _categoryRepository.GetAllAsAsyncEnumerable(cancellationToken: cancellationToken);
+            Expression<Func<Category, bool>> predicate = null;
+
+            if (!string.IsNullOrWhiteSpace(request.CategoryName))
+            {
+                predicate = c => c.Name == request.CategoryName;
+            }
+               
+
+            var entities= await _categoryRepository.GetAllAsAsyncEnumerable(predicate, cancellationToken: cancellationToken);
 
             return entities.ToDto();
         }

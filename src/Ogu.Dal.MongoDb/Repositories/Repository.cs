@@ -15,8 +15,9 @@ namespace Ogu.Dal.MongoDb.Repositories
 {
     public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity : class, IBaseEntity<TId>, new() where TId : IEquatable<TId>
     {
+        private static readonly ProjectionDefinition<TEntity> IncludeIdProjectionDefinition = Builders<TEntity>.Projection.Include(entity => entity.Id);
+
         private readonly IMongoClient _client;
-        private readonly IMongoDatabase _database;
         private readonly HashSet<string> _propertyNameSet;
 
         public Repository(IMongoClient client, string database = null, string table = null)
@@ -39,11 +40,11 @@ namespace Ogu.Dal.MongoDb.Repositories
                     throw new ArgumentException("Property name cannot be null or whitespace.", nameof(table));
             }
 
-            _database = _client.GetDatabase(database);
-
-            Table = _database.GetCollection<TEntity>(table);
+            Table = _client.GetDatabase(database).GetCollection<TEntity>(table);
 
             _propertyNameSet = new HashSet<string>(typeof(TEntity).GetProperties().Select(x => x.Name));
+
+            _ = Task.Run(() => Table.CreateIndexesIfIndexAttributeExists());
         }
 
         public IMongoCollection<TEntity> Table { get; }
@@ -71,7 +72,7 @@ namespace Ogu.Dal.MongoDb.Repositories
             var currentTime = DateTime.UtcNow;
             
             var entitiesAsArray = entities
-                .Where(e => e.Id == null || e.Id.Equals(default(TId)))
+                .Where(e => e.Id == null || e.Id.Equals(default))
                 .Select(e =>
                 {
                     e.CreatedOn = currentTime;
@@ -80,21 +81,11 @@ namespace Ogu.Dal.MongoDb.Repositories
                 .ToArray();
 
             if (entitiesAsArray.Length == 0)
-                return null;
+                return Enumerable.Empty<TEntity>();
 
             await Table.InsertManyAsync(entitiesAsArray, cancellationToken: cancellationToken).ConfigureAwait(false);
 
             return entitiesAsArray;
-        }
-
-        public virtual async Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
-        {
-            if(predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-
-            var cursor = await Table.FindAsync(predicate, cancellationToken: cancellationToken).ConfigureAwait(false);
-
-            return await cursor.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public virtual Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, CancellationToken cancellationToken = default)
@@ -359,13 +350,11 @@ namespace Ogu.Dal.MongoDb.Repositories
             return predicate == null ? Table.EstimatedDocumentCountAsync(cancellationToken: cancellationToken) : Table.CountDocumentsAsync(predicate, cancellationToken: cancellationToken);
         }
 
-        public virtual async Task<bool> IsAnyAsync(Expression<Func<TEntity, bool>> predicate = null, CancellationToken cancellationToken = default)
+        public virtual Task<bool> IsAnyAsync(Expression<Func<TEntity, bool>> predicate = null, CancellationToken cancellationToken = default)
         {
-            var projection = Builders<TEntity>.Projection.Include(entity => entity.Id);
-
-            var result = await Table.Find(predicate ?? Builders<TEntity>.Filter.Empty).Project(projection).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
-
-            return result != null;
+            return IAsyncCursorSourceExtensions.AnyAsync(
+                Table.Find(predicate ?? Builders<TEntity>.Filter.Empty).Project(IncludeIdProjectionDefinition).Limit(1),
+                cancellationToken);
         }
 
         public virtual async Task WithSessionAsync(Func<IMongoCollection<TEntity>, Task> func, CancellationToken cancellationToken = default)

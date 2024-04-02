@@ -18,32 +18,26 @@ namespace Ogu.Dal.Abstractions
             Items = Enumerable.Empty<TModel>();
         }
 
-        public LongPaginated(long pageIndex, long itemsPerPage, long totalItems, long rangeOfPages, TModel[] entities)
+        public LongPaginated(long pageIndex, long itemsPerPage, long totalItems, long rangeOfPages, TModel[] items)
         {
-            Items = entities ?? Array.Empty<TModel>();
+            Items = items = items ?? Array.Empty<TModel>();
 
-            PagingInfo = new x64.PagingInfo(pageIndex, itemsPerPage, totalItems, rangeOfPages);
+            PagingInfo = new x64.PagingInfo(pageIndex, items.Length, itemsPerPage, totalItems, rangeOfPages);
         }
 
-        public LongPaginated(long pageIndex, long itemsPerPage, long totalItems, long rangeOfPages, IList<TModel> entities)
+        public LongPaginated(long pageIndex, long itemsPerPage, long totalItems, long rangeOfPages, IList<TModel> items)
         {
-            Items = entities ?? new List<TModel>();
+            Items = items = items ?? Array.Empty<TModel>();
 
-            PagingInfo = new x64.PagingInfo(pageIndex, itemsPerPage, totalItems, rangeOfPages);
+            PagingInfo = new x64.PagingInfo(pageIndex, items.Count, itemsPerPage, totalItems, rangeOfPages);
         }
 
-        public LongPaginated(long totalItems, TModel[] entities)
+        public LongPaginated(long totalItems, TModel[] items) : this(1, totalItems, totalItems, 0, items)
         {
-            Items = entities ?? Array.Empty<TModel>();
-
-            PagingInfo = new x64.PagingInfo(1, totalItems, totalItems, 0);
         }
 
-        public LongPaginated(long totalItems, IList<TModel> entities)
+        public LongPaginated(long totalItems, IList<TModel> items) : this(1, totalItems, totalItems, 0, items)
         {
-            Items = entities ?? new List<TModel>();
-
-            PagingInfo = new x64.PagingInfo(1, totalItems, totalItems, 0);
         }
 
         public IPagingInfo<long> PagingInfo { get; }
@@ -55,19 +49,7 @@ namespace Ogu.Dal.Abstractions
         public LongPaginatedDto() { }
         public LongPaginatedDto(IPagingInfo<long> pagingInfo, IEnumerable<TDto> items)
         {
-            PagingInfo = new x64.PagingInfoDto
-            {
-                PageIndexItems = pagingInfo.PageIndexItems,
-                PageIndex = pagingInfo.PageIndex,
-                ItemsPerPage = pagingInfo.ItemsPerPage,
-                TotalItems = pagingInfo.TotalItems,
-                TotalPages = pagingInfo.TotalPages,
-                HasNextPage = pagingInfo.HasNextPage,
-                HasPreviousPage = pagingInfo.HasPreviousPage,
-                RangeOfPages = pagingInfo.RangeOfPages,
-                FinishIndex = pagingInfo.FinishIndex,
-                StartIndex = pagingInfo.StartIndex,
-            };
+            PagingInfo = pagingInfo;
             Items = items;
         }
 

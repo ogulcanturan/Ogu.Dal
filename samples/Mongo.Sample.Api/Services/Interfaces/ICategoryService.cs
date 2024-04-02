@@ -10,7 +10,7 @@ namespace MongoDb.Sample.Api.Services.Interfaces
     public interface ICategoryService
     {
         Task<CategoryDto> GetAsync(GetCategoryRequest request, CancellationToken cancellationToken = default);
-        Task<IEnumerable<CategoryDto>> GetAllAsync(bool includeProducts, CancellationToken cancellationToken = default);
+        Task<IEnumerable<CategoryDto>> GetAllAsync(GetAllCategoriesRequest request, CancellationToken cancellationToken = default);
         Task<IPaginated<CategoryDto>> GetAllAsAsyncPaginated(GetAllAsPaginatedCategoryRequest request, CancellationToken cancellationToken = default);
         Task<CategoryDto> AddAsync(AddCategoryRequest request, CancellationToken cancellationToken = default);
         Task<IEnumerable<CategoryDto>> AddRangeAsync(AddCategoriesRequest request, CancellationToken cancellationToken = default);

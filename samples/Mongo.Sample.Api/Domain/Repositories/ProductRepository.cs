@@ -1,6 +1,6 @@
 ﻿using MongoDb.Sample.Api.Domain.Entities;
 using MongoDb.Sample.Api.Domain.Repositories.Interfaces;
-using MongoDb.Sample.Api.Models.Settings;
+using MongoDb.Sample.Api.Settings;
 using MongoDB.Driver;
 using Ogu.Dal.MongoDb.Repositories;
 

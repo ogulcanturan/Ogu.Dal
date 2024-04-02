@@ -31,7 +31,7 @@ namespace Sql.Sample.Api.Services
             return entity?.ToDto();
         }
 
-        public async Task<IEnumerable<CategoryDto>> GetAllAsync(bool includeProducts, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<CategoryDto>> GetAllAsync(GetAllCategoriesRequest request, CancellationToken cancellationToken = default)
         {
             var includeProperties = includeProducts ? nameof(Category.Products) : null;
 
@@ -140,9 +140,14 @@ namespace Sql.Sample.Api.Services
             return true;
         }
 
-        public Task<int> RemoveAllAsync(CancellationToken cancellationToken = default)
+        public Task<int> RemoveRangeAsync(CancellationToken cancellationToken = default)
         {
             return _categoryRepository.InstantRemoveRangeAsync(cancellationToken);
+        }
+
+        public Task<bool> IsCategoryExistAsync(string name, CancellationToken cancellationToken)
+        {
+            return _categoryRepository.IsAnyAsync(c => c.Name == name, cancellationToken: cancellationToken);
         }
     }
 }

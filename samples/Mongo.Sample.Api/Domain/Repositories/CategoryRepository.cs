@@ -1,8 +1,8 @@
 ﻿using MongoDb.Sample.Api.Domain.Entities;
 using MongoDb.Sample.Api.Domain.Repositories.Interfaces;
 using MongoDB.Driver;
-using MongoDb.Sample.Api.Models.Settings;
 using Ogu.Dal.MongoDb.Repositories;
+using MongoDb.Sample.Api.Settings;
 
 namespace MongoDb.Sample.Api.Domain.Repositories
 {

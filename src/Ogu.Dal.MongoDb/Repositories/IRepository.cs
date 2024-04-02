@@ -16,7 +16,6 @@ namespace Ogu.Dal.MongoDb.Repositories
         IMongoQueryable<TEntity> AsQueryable();
         Task<bool> InstantAddAsync(TEntity obj, CancellationToken cancellationToken = default);
         Task<IEnumerable<TEntity>> InstantAddRangeAsync(IEnumerable<TEntity> objects, CancellationToken cancellationToken = default);
-        Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
         Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, CancellationToken cancellationToken = default);
         Task<TEntity> GetByIdAsync(object id, CancellationToken cancellationToken = default);
         IMongoQueryable<TEntity> GetAllAsQueryable(Expression<Func<TEntity, bool>> predicate = null, Func<IMongoQueryable<TEntity>, IOrderedMongoQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, CancellationToken cancellationToken = default);

@@ -1,6 +1,7 @@
 ﻿using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Ogu.Dal.Abstractions;
+using Ogu.Dal.MongoDb.Attributes;
 using Ogu.Dal.MongoDb.Entities;
 using System;
 using System.Collections.Generic;
@@ -14,11 +15,63 @@ namespace Ogu.Dal.MongoDb.Extensions
 {
     public static class MongoDbExtensions
     {
+        private static readonly HashSet<string> UpdateDisallowedPropertyNames = new HashSet<string>()
+        {
+            nameof(BaseEntity.Id),
+            nameof(BaseEntity.UpdatedOn),
+            nameof(BaseEntity.CreatedOn)
+        };
+
+        private static UpdateDefinition<T> GetUpdateDefinition<T>() =>
+            Builders<T>.Update.Set(nameof(BaseEntity.UpdatedOn), DateTime.UtcNow); 
+
         public static UpdateDefinition<T> ToUpdateDefinition<T>(this Expression<Func<T, T>> exp)
         {
-            return Builders<T>.Update.Combine(GetPropertyNameToValueDictionary(exp).Select(kvp =>
+            return Builders<T>.Update.Combine(GetPropertyNameToValueDictionary(exp).Where(kvp => !UpdateDisallowedPropertyNames.Contains(kvp.Key)).Select(kvp =>
                     Builders<T>.Update.Set(kvp.Key, kvp.Value))
-                .Append(Builders<T>.Update.Set(nameof(BaseEntity.UpdatedOn), DateTime.UtcNow)));
+                .Append(GetUpdateDefinition<T>()));
+        }
+
+       
+
+        internal static Task CreateIndexesIfIndexAttributeExists<T>(this IMongoCollection<T> table, CancellationToken cancellationToken = default)
+        {
+            var type = typeof(T);
+            var indexAttributes = type.GetCustomAttributes(typeof(MongoIndexAttribute), true)
+                .OfType<MongoIndexAttribute>();
+
+            foreach (var attribute in indexAttributes)
+            {
+                CreateIndexOptions options = null;
+
+                if (attribute.IsUnique)
+                {
+                    options = new CreateIndexOptions() { Unique = true };
+                }
+
+                IndexKeysDefinition<T> indexKeysDefinition = null;
+
+                if (attribute.PropertyNameToIndexTypeDictionary.Count == 1)
+                {
+                    var firstElement = attribute.PropertyNameToIndexTypeDictionary.First();
+
+                    indexKeysDefinition = firstElement.Value.ToIndexKeysDefinition<T>(firstElement.Key);
+                }
+                else
+                {
+                    var indexKeyDefinitions =
+                        attribute.PropertyNameToIndexTypeDictionary.Select(p =>
+                            p.Value.ToIndexKeysDefinition<T>(p.Key));
+
+                    indexKeysDefinition = Builders<T>.IndexKeys.Combine(indexKeyDefinitions);
+                }
+
+                var indexModel = new CreateIndexModel<T>(indexKeysDefinition, options);
+
+                return table.Indexes.CreateOneAsync(indexModel, cancellationToken: cancellationToken);
+            }
+
+            return Task.CompletedTask;
         }
 
         public static SortDefinition<T> ToSortDefinition<T>(this Func<IQueryable<T>, IOrderedQueryable<T>> orderBy)
@@ -28,7 +81,7 @@ namespace Ogu.Dal.MongoDb.Extensions
             var queryable = Enumerable.Empty<T>().AsQueryable();
 
             var orderedQueryable = orderBy(queryable);
-
+                        
             foreach (var expression in ((MethodCallExpression)orderedQueryable.Expression).Arguments)
             {
                 if (!(expression is UnaryExpression unaryExpression)) 
@@ -42,7 +95,7 @@ namespace Ogu.Dal.MongoDb.Extensions
                 var propertyName = memberExpression.Member.Name;
 
                 if (unaryExpression.NodeType == ExpressionType.Quote &&
-                    orderedQueryable.Expression.ToString().Contains("OrderByDescending"))
+                    ((MethodCallExpression)orderedQueryable.Expression).Method.Name == "OrderByDescending")
                 {
                     sortDefinition = sortDefinition == null
                         ? Builders<T>.Sort.Descending(propertyName)
@@ -59,49 +112,12 @@ namespace Ogu.Dal.MongoDb.Extensions
             return sortDefinition;
         }
 
-        //public static SortDefinition<T> ToSortDefinition<T>(this Func<IQueryable<T>, IOrderedQueryable<T>> orderBy)
-        //{
-        //    var queryable = Enumerable.Empty<T>().AsQueryable();
-        //    var orderedQuery = orderBy(queryable);
-
-        //    SortDefinition<T> sortDefinition = null;
-
-        //    foreach (var expression in ((MethodCallExpression)orderedQuery.Expression).Arguments)
-        //    {
-        //        var lambda = (LambdaExpression)((UnaryExpression)expression).Operand;
-        //        var member = (MemberExpression)lambda.Body;
-        //        var propertyName = member.Member.Name;
-
-        //        if (expression.ToString().Contains("OrderByDescending"))
-        //        {
-        //            sortDefinition = Builders<T>.Sort.Descending(propertyName);
-        //        }
-        //        else
-        //        {
-        //            sortDefinition = Builders<T>.Sort.Ascending(propertyName);
-        //        }
-        //    }
-
-        //    return sortDefinition;
-        //}
-
-        public static UpdateDefinition<TEntity> GetUpdateDefinitionByComparingTwoEntities<TEntity, TId>(TEntity newEntity, TEntity currentEntity, IEnumerable<PropertyInfo> properties) where TEntity : IBaseEntity<TId> where TId : IEquatable<TId>
-        {
-            var propertiesWithValueAssigned = GetPropertiesWithValueAssigned<TEntity, TId>(newEntity, currentEntity, properties);
-
-            var updateDefinitions = propertiesWithValueAssigned
-                .Select(property => Builders<TEntity>.Update.Set(property.Key, property.Value))
-                .Append(Builders<TEntity>.Update.Set(nameof(BaseEntity.UpdatedOn), DateTime.UtcNow));
-
-            return Builders<TEntity>.Update.Combine(updateDefinitions);
-        }
-    
         public static UpdateDefinition<TEntity> GetUpdateDefinitionByAnonymousType<TEntity, TId>(object anonymousType, HashSet<string> propertyNameSet) where TEntity : IBaseEntity<TId> where TId : IEquatable<TId>
         {
             return Builders<TEntity>.Update.Combine(anonymousType.GetType().GetProperties()
-                .Where(p => propertyNameSet.Contains(p.Name) && !IsPropertySkipped(p)).Select(p =>
+                .Where(p => propertyNameSet.Contains(p.Name) && !UpdateDisallowedPropertyNames.Contains(p.Name)).Select(p =>
                     Builders<TEntity>.Update.Set(p.Name, p.GetValue(anonymousType)))
-                .Append(Builders<TEntity>.Update.Set(nameof(BaseEntity.UpdatedOn), DateTime.UtcNow)));
+                .Append(GetUpdateDefinition<TEntity>()));
         }
 
         public static async Task<IPaginated<TEntity>> ToPaginatedAsync<TEntity>(this IMongoQueryable<TEntity> items, Func<IMongoQueryable<TEntity>, IOrderedMongoQueryable<TEntity>> orderBy, int pageIndex = 0, int itemsPerPage = 0, int rangeOfPages = 0, CancellationToken cancellationToken = default)
@@ -243,7 +259,6 @@ namespace Ogu.Dal.MongoDb.Extensions
             return fluentQuery;
         }
 
-
         public static IMongoQueryable<T> LongSkip<T>(this IMongoQueryable<T> items, long count) => LongSkip(items, int.MaxValue, count);
         internal static IMongoQueryable<T> LongSkip<T>(IMongoQueryable<T> items, int maxSize, long count)
         {
@@ -270,6 +285,30 @@ namespace Ogu.Dal.MongoDb.Extensions
                 items = items.Take((int)remainder);
 
             return items;
+        }
+
+        private static IndexKeysDefinition<T> ToIndexKeysDefinition<T>(
+            this IndexTypeEnum indexType, string propertyName)
+        {
+            switch (indexType)
+            {
+                case IndexTypeEnum.Ascending:
+                    return Builders<T>.IndexKeys.Ascending(propertyName);
+                case IndexTypeEnum.Descending:
+                    return Builders<T>.IndexKeys.Descending(propertyName);
+                case IndexTypeEnum.Geo2D:
+                    return Builders<T>.IndexKeys.Geo2D(propertyName);
+                case IndexTypeEnum.Geo2DSphere:
+                    return Builders<T>.IndexKeys.Geo2DSphere(propertyName);
+                case IndexTypeEnum.Hashed:
+                    return Builders<T>.IndexKeys.Hashed(propertyName);
+                case IndexTypeEnum.Text:
+                    return Builders<T>.IndexKeys.Text(propertyName);
+                case IndexTypeEnum.Wildcard:
+                    return Builders<T>.IndexKeys.Wildcard(propertyName);
+                default:
+                    throw new NotSupportedException();
+            }
         }
 
         private static object GetValueFromExpression(Expression exp)
@@ -316,28 +355,6 @@ namespace Ogu.Dal.MongoDb.Extensions
             }
 
             return assignedProperties;
-        }
-
-        private static IDictionary<string, object> GetPropertiesWithValueAssigned<TEntity, TId>(TEntity newEntity, TEntity currentEntity, IEnumerable<PropertyInfo> properties) where TEntity : IBaseEntity<TId> where TId : IEquatable<TId>
-        {
-            var propertiesWithValueAssigned = new Dictionary<string, object>();
-
-            foreach (var propertyInfo in properties)
-            {
-                var newValue = propertyInfo.GetValue(newEntity);
-
-                if (!IsPropertySkipped(propertyInfo) && !ArePropertyValuesEqual(newValue, propertyInfo.GetValue(currentEntity)))
-                {
-                    propertiesWithValueAssigned[propertyInfo.Name] = propertyInfo.GetValue(newEntity);
-                }
-            }
-
-            return propertiesWithValueAssigned;
-        }
-
-        private static bool IsPropertySkipped(PropertyInfo propertyInfo)
-        {
-            return propertyInfo.Name == nameof(BaseEntity.Id) || propertyInfo.Name == nameof(BaseEntity.CreatedOn) || propertyInfo.Name == nameof(BaseEntity.UpdatedOn);
         }
 
         private static bool ArePropertyValuesEqual(object newValue, object oldValue)

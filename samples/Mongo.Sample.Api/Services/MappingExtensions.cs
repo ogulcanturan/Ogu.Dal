@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using MongoDb.Sample.Api.Domain.Entities;
+﻿using MongoDb.Sample.Api.Domain.Entities;
 using MongoDb.Sample.Api.Models.Dtos;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MongoDb.Sample.Api.Services
 {
@@ -13,7 +13,7 @@ namespace MongoDb.Sample.Api.Services
             CreatedOn = category.CreatedOn,
             UpdatedOn = category.UpdatedOn,
             Name = category.Name,
-            Products = category.Products?.ToDto() ?? []
+            Products = category.Products.ToDto() 
         };
 
         public static ProductDto ToDto(this Product product) => new ProductDto
