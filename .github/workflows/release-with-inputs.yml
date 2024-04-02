@@ -32,7 +32,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Rename Package File
-        run: mv src/${{ github.event.inputs.project_name }/bin/Release/${{ github.event.inputs.project_name }.1.0.0.nupkg src/{{ github.event.inputs.project_name }}/bin/Release/${{ github.event.inputs.project_name }}.{{ github.event.inputs.version_number }}.nupkg
+        run: mv src/${{ github.event.inputs.project_name }/bin/Release/${{ github.event.inputs.project_name }}.1.0.0.nupkg src/{{ github.event.inputs.project_name }}/bin/Release/${{ github.event.inputs.project_name }}.{{ github.event.inputs.version_number }}.nupkg
 
       - name: Push NuGet package
         run: dotnet nuget push src/${{ github.event.inputs.project_name }}/bin/Release/${{ github.event.inputs.project_name }}.${{ github.event.inputs.version_number }}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
