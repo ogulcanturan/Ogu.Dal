@@ -11,12 +11,20 @@ on:
       version_number:
         description: 'Version number of the package'
         required: true
+        default: '1.0.0'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate version number format
+        run: |
+          if [[ ! "${{ github.event.inputs.version_number }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-preview\.[0-9]+\.[0-9]+\.[0-9]+)?$ ]]; then
+            echo "Invalid version number format. Version number should be in the format '[0-9].[0-9].[0-9]' or '[0-9].[0-9].[0-9]-preview.[0-9].[0-9].[0-9]'."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v2
 
