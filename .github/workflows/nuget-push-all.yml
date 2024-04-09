@@ -3,7 +3,6 @@ name: NuGet Push All
 on:
   workflow_dispatch:
     inputs:
-      project_name:
       version_number:
         description: 'Version number of the package'
         required: true
