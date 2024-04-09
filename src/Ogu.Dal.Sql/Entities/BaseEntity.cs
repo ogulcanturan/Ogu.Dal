@@ -3,7 +3,7 @@ using Ogu.Dal.Abstractions;
 
 namespace Ogu.Dal.Sql.Entities
 {
-    public abstract class BaseEntity<TId> : IBaseEntity<TId> where TId : IEquatable<TId>
+    public abstract class BaseEntity<TId> : IBaseEntity<TId>
     {
         public virtual TId Id { get; set; }
         public virtual DateTime CreatedOn { get; set; }

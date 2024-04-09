@@ -1,12 +1,13 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using Ogu.Dal.Abstractions;
+using System;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 
-namespace Ogu.Dal.Sql.Entities
+namespace Ogu.Dal.MongoDb.Entities
 {
-    public abstract class EnumDatabase<TEnum> : BaseEntity<TEnum> where TEnum : struct, Enum
+    public abstract class EnumDatabase<TEnum> : IBaseEntity<TEnum> where TEnum : struct, Enum
     {
         protected EnumDatabase() { }
         protected EnumDatabase(TEnum id)
@@ -16,10 +17,13 @@ namespace Ogu.Dal.Sql.Entities
             Description = typeof(TEnum).GetField(id.ToString())?.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty;
         }
 
-        [Key, DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [BsonId, BsonRepresentation(BsonType.ObjectId)]
+        public string BsonId { get; set; }
         public new TEnum Id { get; set; }
         public string Code { get; set; }
         public string Description { get; set; }
         public bool IsEnumValueExistsInProgram { get; set; } = true;
+        public DateTime CreatedOn { get; set; }
+        public DateTime? UpdatedOn { get; set; }
     }
 }

@@ -1,10 +1,8 @@
 ﻿using Ogu.Dal.Sql.Entities;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace Sql.Sample.Api.Domain.Entities
 {
-    [Index("")]
     public sealed class Product : BaseEntity<int>
     {
         public string Name { get; set; }

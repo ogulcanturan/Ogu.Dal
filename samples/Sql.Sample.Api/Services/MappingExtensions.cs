@@ -13,6 +13,7 @@ namespace Sql.Sample.Api.Services
             CreatedOn = category.CreatedOn,
             UpdatedOn = category.UpdatedOn,
             Name = category.Name,
+            CategoryTypeId = category.CategoryTypeId,
             Products = category.Products?.ToDto() ?? []
         };
 

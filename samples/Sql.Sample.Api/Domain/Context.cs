@@ -9,5 +9,6 @@ namespace Sql.Sample.Api.Domain
 
         public DbSet<Category> Categories { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<CategoryType> CategoryTypes { get; set; }
     }
 }

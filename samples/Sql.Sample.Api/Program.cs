@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Ogu.Dal.Sql.Extensions;
 using Sql.Sample.Api;
 using Sql.Sample.Api.Domain;
 using Sql.Sample.Api.Services;
@@ -14,8 +15,7 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDomain("Data source=Sql_Sample.Db");
-builder.Services.AddServices();
+builder.Services.AddServices("Data source=Sql_Sample.Db");
 
 builder.Services.AddLogging(cfg => cfg.AddSimpleConsole(opts =>
 {
@@ -41,6 +41,7 @@ await using var scope = app.Services.CreateAsyncScope();
 var context = scope.ServiceProvider.GetRequiredService<Context>();
 
 await context.Database.MigrateAsync();
+await context.SeedEnumDatabaseAsync();
 await context.SeedWithSomeDataAsync();
 
 if (app.Environment.IsDevelopment())
@@ -52,6 +53,5 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-
 
 app.Run();

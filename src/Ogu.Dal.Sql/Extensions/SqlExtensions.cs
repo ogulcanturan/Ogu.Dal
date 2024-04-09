@@ -6,7 +6,6 @@ using Ogu.Dal.Sql.Observers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -161,81 +160,87 @@ namespace Ogu.Dal.Sql.Extensions
             return result;
         }
 
-        public static async Task SeedEnumDatabaseAsync(this DbContext context)
+        public static async Task SeedEnumDatabaseAsync(this DbContext context, CancellationToken cancellationToken = default)
         {
             var propertyInfos = context.GetType().GetProperties().Where(x => typeof(DbSet<>).IsTypeOfGeneric(x.PropertyType) && typeof(EnumDatabase<>).IsSubTypeOfRawGeneric(x.PropertyType.GetGenericArguments()[0]));
 
+            var currentTime = DateTime.UtcNow;
+
             foreach (var item in propertyInfos)
             {
-                var enumValues = item.GetValue(context) is IEnumerable<object> enumValuesFromDb ? new HashSet<object>(enumValuesFromDb) : null;
-
-                if (enumValues == null)
-                {
+                if (!(item.GetValue(context) is IEnumerable<object> enumValuesFromDb))
                     continue;
-                }
 
-                var enumIds = new HashSet<object>(enumValues.Select(x => x.GetType()?.GetProperty("Id")?.GetValue(x)));
-
-                var classType = item.PropertyType.GetGenericArguments()[0]; //ex: IconType - (DbSet<IconType>)
-                var enumType = classType.BaseType?.GenericTypeArguments[0]; //ex: IconTypeEnum - (EnumDatabase<IconTypeEnum>)
+                var tableType = item.PropertyType.GetGenericArguments()[0]; //ex: IconType - (DbSet<IconType>)
+                var enumType = tableType.BaseType?.GenericTypeArguments[0]; //ex: IconTypeEnum - EnumDatabase<IconTypeEnum>
 
                 if (enumType == null)
-                {
                     continue;
-                }
 
-                var constructorOfClass = classType.GetConstructor(new Type[] { enumType });
-                //If code, description, or IsEnumTypeExistsInProgram value has changed, update enums.
+                var tableConstructor = tableType.GetConstructor(new [] { enumType });
+
+                if (tableConstructor == null)
+                    continue;
+
+                var tableTypeIdProperty = tableType.GetProperty("Id");
+                var tableTypeCodeProperty = tableType.GetProperty("Code");
+                var tableTypeDescriptionProperty = tableType.GetProperty("Description");
+                var tableTypeIsEnumValueExistsInProgramProperty = tableType.GetProperty("IsEnumValueExistsInProgram");
+                var tableTypeCreatedOnProperty = tableType.GetProperty("CreatedOn");
+                var tableTypeUpdatedOnProperty = tableType.GetProperty("UpdatedOn");
+
                 var enums = new HashSet<object>(Enum.GetValues(enumType).Cast<object>());
-                var updateEnums = enums.Where(x => enumIds.Contains(x)).ToArray();
-                foreach (var id in updateEnums)
+
+                var enumIdsFromDb = new HashSet<object>();
+
+                foreach (var entity in enumValuesFromDb)
                 {
-                    var enumEntity = enumValues.FirstOrDefault(x => x.GetType().GetProperty("Id").GetValue(x).Equals(id));
-                    var newClass = constructorOfClass?.Invoke(new object[] { id });
+                    var entityId = tableTypeIdProperty.GetValue(entity);
 
-                    var defaultCodeValue = classType.GetProperty("Code")?.GetValue(newClass);
-                    var defaultDescriptionValue = classType.GetProperty("Description")?.GetValue(newClass);
-                    //object defaultIsEnumTypeExistsValue = classType.GetProperty(nameof(EnumDatabase<EmptyEnum>.IsEnumTypeExistsInProgram)).GetValue(newClass);
+                    enumIdsFromDb.Add(entityId);
 
-                    var existedCodeValue = classType.GetProperty("Code")?.GetValue(enumEntity);
-                    var existedDescriptionValue = classType.GetProperty("Description")?.GetValue(enumEntity);
-                    //object existedIsEnumTypeExistsValue = classType.GetProperty(nameof(EnumDatabase<EmptyEnum>.IsEnumTypeExistsInProgram)).GetValue(enumEntity);
-
-                    if (defaultCodeValue != existedCodeValue || defaultDescriptionValue != existedDescriptionValue)
+                    if (!enums.Contains(entityId))
                     {
-                        classType.GetProperty("UpdatedOn")?.SetValue(enumEntity, DateTime.UtcNow);
+                        tableTypeIsEnumValueExistsInProgramProperty.SetValue(entity, false);
+                        tableTypeUpdatedOnProperty.SetValue(entity, currentTime);
+                        continue;
                     }
 
-                    classType.GetProperty("Code")?.SetValue(enumEntity, defaultCodeValue);
+                    var newClass = tableConstructor.Invoke(new object[] { entityId });
 
-                    classType.GetProperty("Description")?.SetValue(enumEntity, defaultDescriptionValue);
+                    var newClassCodeValue = tableTypeCodeProperty.GetValue(newClass);
+                    var newClassDescriptionValue = tableTypeDescriptionProperty.GetValue(newClass);
+
+                    if (tableTypeCodeProperty.GetValue(entity).ToString() != newClassCodeValue.ToString() ||
+                        tableTypeDescriptionProperty.GetValue(entity).ToString() != newClassDescriptionValue.ToString() ||
+                        (bool)tableTypeIsEnumValueExistsInProgramProperty.GetValue(entity) != true)
+                    {
+                        tableTypeUpdatedOnProperty.SetValue(entity, currentTime);
+                    }
+
+                    tableTypeCodeProperty.SetValue(entity, newClassCodeValue);
+                    tableTypeDescriptionProperty.SetValue(entity, newClassDescriptionValue);
+                    tableTypeIsEnumValueExistsInProgramProperty.SetValue(entity, true);
                 }
 
-                //If enum type is not exist in the program, update enum property IsEnumTypeExistsInProgram to 'false'
-                var notExistEnumTypesInProgram = enumIds.Where(x => !enums.Contains(x));
-                foreach (var id in notExistEnumTypesInProgram)
+                foreach (var newEnum in enums.Except(enumIdsFromDb))
                 {
-                    var enumEntity = enumValues.FirstOrDefault(x => x.GetType().GetProperty("Id").GetValue(x).Equals(id));
-                    classType.GetProperty("IsEnumTypeExistsInProgram")?.SetValue(enumEntity, false);
-                    classType.GetProperty("UpdatedOn")?.SetValue(enumEntity, DateTime.UtcNow);
+                    var entity = tableConstructor.Invoke(new object[] { newEnum });
+
+                    tableTypeCreatedOnProperty.SetValue(entity, currentTime);
+
+                    context.Add(entity);
                 }
-
-                //Insert new enum values to database
-                object[] newEnums = enums.Except(updateEnums).Select(x =>
-                {
-                    var newEnum = constructorOfClass?.Invoke(new object[] { x });
-                    classType.GetProperty("CreatedOn")?.SetValue(newEnum, DateTime.UtcNow);
-                    return newEnum;
-                }).ToArray();
-
-                if (newEnums.Length > 0)
-                    context.AddRange(newEnums);
             }
 
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
 #if NETSTANDARD2_0
-            context.ChangeTracker.Entries().Where(x => x.Entity != null).ToList().ForEach(x => x.State = EntityState.Detached);
+            foreach (var entityEntry in context.ChangeTracker.Entries()
+                         .Where(entityEntry => entityEntry.Entity != null))
+            {
+                entityEntry.State = EntityState.Detached;
+            }
 #else
             context.ChangeTracker.Clear();
 #endif
@@ -295,38 +300,6 @@ namespace Ogu.Dal.Sql.Extensions
         internal static Task<int> SaveChangesAsync(this DbContext context, TrackingActivityEnum trackingActivity, CancellationToken cancellationToken = default)
         {
             return context.SaveChangesAsync(trackingActivity == TrackingActivityEnum.Inactive, cancellationToken);
-        }
-
-        private static bool IsTypeOfGeneric(this Type genericType, Type toCheck)
-        {
-            if (!toCheck.IsGenericType)
-                return false;
-
-            return genericType == toCheck.GetTypeInfo().GetGenericTypeDefinition();
-        }
-
-        private static bool IsSubTypeOfRawGeneric(this Type genericType, Type toCheck)
-        {
-            return genericType.GetTypeInfo().IsInterface ? (toCheck.GetTypeInfo().IsClass && IsInterfaceOfRawGeneric(genericType, toCheck)) : IsSubclassOfRawGeneric(genericType, toCheck);
-        }
-
-        private static bool IsInterfaceOfRawGeneric(this Type genericType, Type toCheck)
-        {
-            return genericType.GetInterfaces().Any(i => (i.GetTypeInfo().IsGenericType ? i.GetGenericTypeDefinition() : i) == genericType);
-        }
-
-        private static bool IsSubclassOfRawGeneric(this Type genericType, Type toCheck)
-        {
-            while (toCheck != null && toCheck != typeof(object))
-            {
-                var cur = toCheck.GetTypeInfo().IsGenericType ? toCheck.GetGenericTypeDefinition() : toCheck;
-                if (genericType == cur)
-                {
-                    return true;
-                }
-                toCheck = toCheck.GetTypeInfo().BaseType;
-            }
-            return false;
         }
     }
 }

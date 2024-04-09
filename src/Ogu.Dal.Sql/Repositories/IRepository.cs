@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Ogu.Dal.Sql.Repositories
 {
-    public interface IRepository<TEntity, in TId> : IAsyncDisposable, IDisposable where TEntity : class, IBaseEntity<TId>, new() where TId : IEquatable<TId>
+    public interface IRepository<TEntity, in TId> : IAsyncDisposable, IDisposable where TEntity : class, IBaseEntity<TId>, new()
     {
         DbSet<TEntity> Table { get; }
         IQueryable<TEntity> AsQueryable();
@@ -23,7 +23,7 @@ namespace Ogu.Dal.Sql.Repositories
         Task<IEnumerable<TEntity>> InstantAddRangeAsync(IEnumerable<TEntity> entities, bool ignoreIfNotExists, CancellationToken cancellationToken = default);
         Task<IEnumerable<TEntity>> AddRangeAndFetchSpecialValueGeneratorsBeforeSavingAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
         Task<TEntity> GetAsync(TrackingActivityEnum trackingActivity, Expression<Func<TEntity, bool>> predicate = null,  string includeProperties = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery, CancellationToken cancellationToken = default);
-        Task<TEntity> GetByIdAsync(TId id, CancellationToken cancellationToken = default);
+        Task<TEntity> GetByIdAsync(TrackingActivityEnum trackingActivity, TId id, CancellationToken cancellationToken = default);
         IQueryable<TEntity> GetAllAsQueryable(TrackingActivityEnum trackingActivity, Expression<Func<TEntity, bool>> predicate = null, string includeProperties = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery);
         Task<IEnumerable<TEntity>> GetAllAsAsyncEnumerable(TrackingActivityEnum trackingActivity, Expression<Func<TEntity, bool>> predicate = null, string includeProperties = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery, CancellationToken cancellationToken = default);
         Task<IList<TEntity>> GetAllAsAsyncList(TrackingActivityEnum trackingActivity, Expression<Func<TEntity, bool>> predicate = null, string includeProperties = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery, CancellationToken cancellationToken = default);

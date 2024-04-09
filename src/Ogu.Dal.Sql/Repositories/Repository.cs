@@ -11,16 +11,16 @@ using System.Threading.Tasks;
 
 namespace Ogu.Dal.Sql.Repositories
 {
-    public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity : class, IBaseEntity<TId>, new() where TId : IEquatable<TId>
+    public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity : class, IBaseEntity<TId>, new()
     {
         private bool _disposed;
         private DatabaseProviderEnum? _databaseProvider;
-        private readonly DbContext _context;
+        internal readonly DbContext Context;
 
         public Repository(DbContext context)
         {
-            _context = context;
-            Table = _context.Set<TEntity>();
+            Context = context;
+            Table = Context.Set<TEntity>();
         }
 
         public DbSet<TEntity> Table { get; }
@@ -102,12 +102,12 @@ namespace Ogu.Dal.Sql.Repositories
             return entitiesAsArray;
         }
 
-        public Task<bool> InstantAddAsync(TEntity entity, CancellationToken cancellationToken = default)
+        public virtual Task<bool> InstantAddAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
             return InstantAddAsync(entity, true, cancellationToken);
         }
 
-        public async Task<bool> InstantAddAsync(TEntity entity, bool ignoreIfNotExist, CancellationToken cancellationToken = default)
+        public virtual async Task<bool> InstantAddAsync(TEntity entity, bool ignoreIfNotExist, CancellationToken cancellationToken = default)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
@@ -130,12 +130,12 @@ namespace Ogu.Dal.Sql.Repositories
         }
 
 
-        public Task<IEnumerable<TEntity>> InstantAddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+        public virtual Task<IEnumerable<TEntity>> InstantAddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
         {
             return InstantAddRangeAsync(entities, true, cancellationToken);
         }
 
-        public async Task<IEnumerable<TEntity>> InstantAddRangeAsync(IEnumerable<TEntity> entities, bool ignoreIfNotExist, CancellationToken cancellationToken = default)
+        public virtual async Task<IEnumerable<TEntity>> InstantAddRangeAsync(IEnumerable<TEntity> entities, bool ignoreIfNotExist, CancellationToken cancellationToken = default)
         {
             if (entities == null)
                 throw new ArgumentNullException(nameof(entities));
@@ -200,8 +200,12 @@ namespace Ogu.Dal.Sql.Repositories
                  query.FirstOrDefaultAsync(cancellationToken);
         }
 
-        public virtual Task<TEntity> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
-            => Table.FindAsync(new object[] { id }, cancellationToken).AsTask();
+        public virtual Task<TEntity> GetByIdAsync(TrackingActivityEnum trackingActivity, TId id, CancellationToken cancellationToken = default)
+        {
+            return trackingActivity == TrackingActivityEnum.Active
+                ? Table.FindAsync(new object[] { id }, cancellationToken).AsTask()
+                : Table.AsNoTracking().Where(e => e.Id.Equals(id)).FirstOrDefaultWithNoLockSessionAsync(cancellationToken);
+        }
 
         public virtual IQueryable<TEntity> GetAllAsQueryable(TrackingActivityEnum trackingActivity, Expression<Func<TEntity, bool>> predicate = null,
             string includeProperties = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
@@ -239,33 +243,8 @@ namespace Ogu.Dal.Sql.Repositories
             Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null,
             QuerySplittingBehavior querySplittingBehavior = QuerySplittingBehavior.SingleQuery, CancellationToken cancellationToken = default)
         {
-            IQueryable<TEntity> query = Table;
-
-            var isTrackingActivityIsInactive = trackingActivity == TrackingActivityEnum.Inactive;
-
-            if (isTrackingActivityIsInactive)
-                query = query.AsNoTracking();
-
-            query = orderBy != null ? orderBy(query) ?? query.OrderBy(e => e.Id) : query.OrderBy(e => e.Id);
-
-            if (!string.IsNullOrWhiteSpace(includeProperties))
-            {
-                query = IncludeProperties(includeProperties, query);
-#if !NETSTANDARD2_0
-                if (querySplittingBehavior != QuerySplittingBehavior.SingleQuery && isTrackingActivityIsInactive)
-                    query = query.AsSplitQuery();
-#endif
-            }
-
-            if (predicate != null)
-                query = query.Where(predicate);
-
-            if (selectColumn != null)
-                query = query.Select(selectColumn);
-
-            return isTrackingActivityIsInactive ?
-                 await query.ToArrayWithNoLockSessionAsync(cancellationToken).ConfigureAwait(false) :
-                 await query.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+            return await GetAllAsAsyncArray(trackingActivity, predicate, includeProperties, orderBy, selectColumn,
+                querySplittingBehavior, cancellationToken).ConfigureAwait(false);
         }
 
         public virtual async Task<IList<TEntity>> GetAllAsAsyncList(TrackingActivityEnum trackingActivity,
@@ -479,7 +458,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            _context.Entry(entity).State = EntityState.Detached;
+            Context.Entry(entity).State = EntityState.Detached;
         }
 
         public virtual void Detach(TEntity entity)
@@ -487,7 +466,7 @@ namespace Ogu.Dal.Sql.Repositories
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            _context.Entry<TEntity>(entity).State = EntityState.Detached;
+            Context.Entry<TEntity>(entity).State = EntityState.Detached;
         }
 
         public virtual void DetachRange(IEnumerable<TEntity> entities)
@@ -1187,14 +1166,14 @@ namespace Ogu.Dal.Sql.Repositories
 
         public virtual Task<int> InstantRemoveRangeAsync(CancellationToken cancellationToken = default)
         {
-            var tableName = _context.GetTableNameOrDefault<TEntity>();
+            var tableName = Context.GetTableNameOrDefault<TEntity>();
 
             if (tableName == null)
                 return Task.FromResult(0);
 
-            var sqlCommand = _context.IsSqliteServer() ? "DELETE FROM [{0}]" : "TRUNCATE TABLE [{0}]";
+            var sqlCommand = Context.IsSqliteServer() ? "DELETE FROM [{0}]" : "TRUNCATE TABLE [{0}]";
 
-            return _context.Database.ExecuteSqlRawAsync(string.Format(sqlCommand, tableName), cancellationToken);
+            return Context.Database.ExecuteSqlRawAsync(string.Format(sqlCommand, tableName), cancellationToken);
         }
 
         public virtual Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate = null, CancellationToken cancellationToken = default)
@@ -1238,17 +1217,17 @@ namespace Ogu.Dal.Sql.Repositories
 
         public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken = default,
             TrackingActivityEnum trackingActivity = TrackingActivityEnum.Inactive)
-            => _context.SaveChangesAsync(trackingActivity, cancellationToken);
+            => Context.SaveChangesAsync(trackingActivity, cancellationToken);
 
         public virtual Task<int> SaveChangesWithDateAsync(CancellationToken cancellationToken = default,
             TrackingActivityEnum trackingActivity = TrackingActivityEnum.Inactive)
-            => _context.SaveChangesWithDateAsync(trackingActivity, cancellationToken);
+            => Context.SaveChangesWithDateAsync(trackingActivity, cancellationToken);
 
         public virtual DatabaseProviderEnum GetDatabaseProvider()
         {
             if (!_databaseProvider.HasValue)
             {
-                _databaseProvider = _context.GetDatabaseProvider();
+                _databaseProvider = Context.GetDatabaseProvider();
             }
 
             return _databaseProvider.Value;
@@ -1257,9 +1236,9 @@ namespace Ogu.Dal.Sql.Repositories
         public virtual void ClearChangeTracker()
         {
 #if NETSTANDARD2_0
-            _context.ChangeTracker.Entries().Where(x => x.Entity != null).ToList().ForEach(x => x.State = EntityState.Detached);
+            Context.ChangeTracker.Entries().Where(x => x.Entity != null).ToList().ForEach(x => x.State = EntityState.Detached);
 #else
-            _context.ChangeTracker.Clear();
+            Context.ChangeTracker.Clear();
 #endif
         }
 
@@ -1284,7 +1263,7 @@ namespace Ogu.Dal.Sql.Repositories
         protected virtual void Dispose(bool disposing)
         {
             if (!this._disposed && disposing)
-                _context?.Dispose();
+                Context?.Dispose();
 
             this._disposed = true;
         }
@@ -1298,8 +1277,8 @@ namespace Ogu.Dal.Sql.Repositories
 
         protected virtual async ValueTask DisposeAsyncCore()
         {
-            if (_context != null && !_disposed)
-                await _context.DisposeAsync().ConfigureAwait(false);
+            if (Context != null && !_disposed)
+                await Context.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

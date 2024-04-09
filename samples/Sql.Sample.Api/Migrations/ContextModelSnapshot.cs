@@ -23,6 +23,9 @@ namespace Sql.Sample.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("CategoryTypeId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
@@ -34,7 +37,34 @@ namespace Sql.Sample.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CategoryTypeId");
+
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("Sql.Sample.Api.Domain.Entities.CategoryType", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsEnumValueExistsInProgram")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CategoryTypes");
                 });
 
             modelBuilder.Entity("Sql.Sample.Api.Domain.Entities.Product", b =>
@@ -69,6 +99,17 @@ namespace Sql.Sample.Api.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("Sql.Sample.Api.Domain.Entities.Category", b =>
+                {
+                    b.HasOne("Sql.Sample.Api.Domain.Entities.CategoryType", "CategoryType")
+                        .WithMany()
+                        .HasForeignKey("CategoryTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CategoryType");
                 });
 
             modelBuilder.Entity("Sql.Sample.Api.Domain.Entities.Product", b =>

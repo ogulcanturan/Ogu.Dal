@@ -1,31 +1,66 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Ogu.Dal.Abstractions
 {
     public static class Extensions
     {
+//        public static string GenerateHash(params string[] inputs)
+//        {
+//            var concatenatedInput =
+//#if NETSTANDARD2_1
+//            string.Join('_', inputs);
+//#else
+//            string.Join("_", inputs);
+//#endif
+
+//#if NET5_0_OR_GREATER
+//            var inputBytes = Encoding.UTF8.GetBytes(concatenatedInput);
+//            var inputHash = SHA256.HashData(inputBytes);
+//            return Convert.ToHexString(inputHash);
+//#else
+//            using (SHA256 sha256Hash = SHA256.Create())
+//            {
+//                var hashBytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(concatenatedInput));
+
+//                var builder = new StringBuilder();
+
+//                for (var i = 0; i < hashBytes.Length; i++)
+//                {
+//                    builder.Append(hashBytes[i].ToString("x2"));
+//                }
+
+//                return builder.ToString();
+//            }
+//#endif
+//        }
+
         public static Expression<Func<T, T>> ToColumnsSelectionExpression<T>(this string columns, params char[] separators)
         {
             if (string.IsNullOrWhiteSpace(columns))
                 throw new ArgumentException("Property name cannot be null or whitespace.", nameof(columns));
 
-            if (separators == null)
-                throw new ArgumentNullException(nameof(separators));
-
-            var type = typeof(T);
-
-            if (separators.Length == 0)
+            if (separators == null || separators.Length == 0)
             {
                 separators = new[] { ',' };
             }
 
+            var type = typeof(T);
+
             var parameter = Expression.Parameter(type, "x");
 
             var bindings = columns.Split(separators, StringSplitOptions.RemoveEmptyEntries)
-                .Select(name => Expression.PropertyOrField(parameter, name))
-                .Select(member => Expression.Bind(member.Member, member));
+                .Select(name => name.Trim())
+                .Where(name => name != string.Empty)
+                .Select(name =>
+                {
+                    var memberExpression = Expression.PropertyOrField(parameter, name);
+
+                    return Expression.Bind(memberExpression.Member, memberExpression);
+                });
 
             var body = Expression.MemberInit(Expression.New(type), bindings);
 

@@ -33,7 +33,7 @@ namespace Sql.Sample.Api.Services
 
         public async Task<IEnumerable<CategoryDto>> GetAllAsync(GetAllCategoriesRequest request, CancellationToken cancellationToken = default)
         {
-            var includeProperties = includeProducts ? nameof(Category.Products) : null;
+            var includeProperties = request.IncludeProducts ? nameof(Category.Products) : null;
 
             var entities= await _categoryRepository.GetAllAsAsyncEnumerable(TrackingActivityEnum.Inactive, includeProperties: includeProperties, querySplittingBehavior: QuerySplittingBehavior.SplitQuery, cancellationToken: cancellationToken);
 
@@ -76,7 +76,7 @@ namespace Sql.Sample.Api.Services
             {
                 // First fetch db then update (Two calls - Slower)
 
-                entity = await _categoryRepository.GetByIdAsync(request.Id, cancellationToken);
+                entity = await _categoryRepository.GetByIdAsync(TrackingActivityEnum.Active, request.Id, cancellationToken);
 
                 if (entity == null)
                     return null;
@@ -124,7 +124,7 @@ namespace Sql.Sample.Api.Services
             {
                 // First fetch db then update (Two calls - Slower)
 
-                var entity = await _categoryRepository.GetByIdAsync(request.Id, cancellationToken);
+                var entity = await _categoryRepository.GetByIdAsync(TrackingActivityEnum.Active, request.Id, cancellationToken);
 
                 if (entity == null)
                     return false;

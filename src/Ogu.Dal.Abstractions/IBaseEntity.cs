@@ -2,7 +2,7 @@
 
 namespace Ogu.Dal.Abstractions
 {
-    public interface IBaseEntity<TId> where TId : IEquatable<TId>
+    public interface IBaseEntity<TId>
     {
         TId Id { get; set; }
         DateTime CreatedOn { get; set; }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Sql.Sample.Api.Models.Enums;
 
 namespace Sql.Sample.Api.Models.Dtos
 {
@@ -9,6 +10,8 @@ namespace Sql.Sample.Api.Models.Dtos
         public DateTime CreatedOn { get; set; }
         public DateTime? UpdatedOn { get; set; }
         public string Name { get; set; }
+
+        public CategoryTypeEnum CategoryTypeId { get; set; }
 
         public IEnumerable<ProductDto> Products { get; set; }
     }

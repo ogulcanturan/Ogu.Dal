@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
 using MongoDb.Sample.Api.Domain;
 using MongoDb.Sample.Api.Services.Interfaces;
 using MongoDb.Sample.Api.Settings;
+using System;
 
 namespace MongoDb.Sample.Api.Services
 {

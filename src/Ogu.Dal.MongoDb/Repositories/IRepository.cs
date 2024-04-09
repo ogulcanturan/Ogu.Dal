@@ -10,14 +10,14 @@ using System.Threading.Tasks;
 
 namespace Ogu.Dal.MongoDb.Repositories
 {
-    public interface IRepository<TEntity, TId> where TEntity : class, IBaseEntity<TId>, new() where TId : IEquatable<TId>
+    public interface IRepository<TEntity, in TId> where TEntity : class, IBaseEntity<TId>, new() 
     {
         IMongoCollection<TEntity> Table { get; }
         IMongoQueryable<TEntity> AsQueryable();
         Task<bool> InstantAddAsync(TEntity obj, CancellationToken cancellationToken = default);
         Task<IEnumerable<TEntity>> InstantAddRangeAsync(IEnumerable<TEntity> objects, CancellationToken cancellationToken = default);
         Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, CancellationToken cancellationToken = default);
-        Task<TEntity> GetByIdAsync(object id, CancellationToken cancellationToken = default);
+        Task<TEntity> GetByIdAsync(TId id, CancellationToken cancellationToken = default);
         IMongoQueryable<TEntity> GetAllAsQueryable(Expression<Func<TEntity, bool>> predicate = null, Func<IMongoQueryable<TEntity>, IOrderedMongoQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, CancellationToken cancellationToken = default);
         Task<IEnumerable<TEntity>> GetAllAsAsyncEnumerable(Expression<Func<TEntity, bool>> predicate = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, CancellationToken cancellationToken = default);
         Task<IList<TEntity>> GetAllAsAsyncList(Expression<Func<TEntity, bool>> predicate = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, CancellationToken cancellationToken = default);

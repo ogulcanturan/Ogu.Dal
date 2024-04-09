@@ -13,16 +13,16 @@ using System.Threading.Tasks;
 
 namespace Ogu.Dal.MongoDb.Repositories
 {
-    public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity : class, IBaseEntity<TId>, new() where TId : IEquatable<TId>
+    public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity : class, IBaseEntity<TId>, new()
     {
         private static readonly ProjectionDefinition<TEntity> IncludeIdProjectionDefinition = Builders<TEntity>.Projection.Include(entity => entity.Id);
 
-        private readonly IMongoClient _client;
+        internal readonly IMongoClient Client;
         private readonly HashSet<string> _propertyNameSet;
 
         public Repository(IMongoClient client, string database = null, string table = null)
         {
-            _client = client ?? throw new ArgumentNullException(nameof(client));
+            Client = client ?? throw new ArgumentNullException(nameof(client));
 
             if (string.IsNullOrEmpty(database))
             {
@@ -40,7 +40,7 @@ namespace Ogu.Dal.MongoDb.Repositories
                     throw new ArgumentException("Property name cannot be null or whitespace.", nameof(table));
             }
 
-            Table = _client.GetDatabase(database).GetCollection<TEntity>(table);
+            Table = Client.GetDatabase(database).GetCollection<TEntity>(table);
 
             _propertyNameSet = new HashSet<string>(typeof(TEntity).GetProperties().Select(x => x.Name));
 
@@ -105,7 +105,7 @@ namespace Ogu.Dal.MongoDb.Repositories
             return fluentQuery.FirstOrDefaultAsync(cancellationToken);
         }
 
-        public virtual async Task<TEntity> GetByIdAsync(object id, CancellationToken cancellationToken = default)
+        public virtual async Task<TEntity> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
         {
             var cursor = await Table.FindAsync(Builders<TEntity>.Filter.Eq("_id", id), cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -359,7 +359,7 @@ namespace Ogu.Dal.MongoDb.Repositories
 
         public virtual async Task WithSessionAsync(Func<IMongoCollection<TEntity>, Task> func, CancellationToken cancellationToken = default)
         {
-            using (var session = await _client.StartSessionAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
+            using (var session = await Client.StartSessionAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
             {
                 session.StartTransaction();
                 await func(Table).ConfigureAwait(false);

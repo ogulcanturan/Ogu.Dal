@@ -8,6 +8,8 @@ using MongoDb.Sample.Api;
 using MongoDb.Sample.Api.Domain.Repositories.Interfaces;
 using MongoDb.Sample.Api.Services;
 using MongoDb.Sample.Api.Settings;
+using MongoDB.Driver;
+using Ogu.Dal.MongoDb.Extensions;
 using System;
 using System.IO;
 using System.Reflection;
@@ -40,6 +42,10 @@ var app = builder.Build();
 var categoryRepository = app.Services.GetRequiredService<ICategoryRepository>();
 
 await categoryRepository.SeedWithSomeDataAsync();
+
+var mongoClient = app.Services.GetRequiredService<IMongoClient>();
+
+await mongoClient.SeedEnumDatabaseAsync(dbSettings.Database, typeof(Program).Assembly);
 
 if (app.Environment.IsDevelopment())
 {
