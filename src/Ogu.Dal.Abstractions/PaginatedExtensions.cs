@@ -55,9 +55,19 @@ namespace Ogu.Dal.Abstractions
             return new PaginatedDto<TDto>(paginated.PagingInfo, items);
         }
 
+        public static IPaginated<TDto> ToPaginatedDto<TDto, TEntity>(this IPaginated<TEntity> paginated, Func<IEnumerable<TEntity>, IEnumerable<TDto>> func) where TEntity : class
+        {
+            return ToPaginatedDto(paginated, func(paginated.Items));
+        }
+
         public static ILongPaginated<TDto> ToLongPaginatedDto<TDto, TEntity>(this ILongPaginated<TEntity> paginated, IEnumerable<TDto> items) where TEntity : class
         {
             return new LongPaginatedDto<TDto>(paginated.PagingInfo, items);
+        }
+
+        public static ILongPaginated<TDto> ToLongPaginatedDto<TDto, TEntity>(this ILongPaginated<TEntity> paginated, Func<IEnumerable<TEntity>, IEnumerable<TDto>> func) where TEntity : class
+        {
+            return ToLongPaginatedDto(paginated, func(paginated.Items));
         }
     }
 }
