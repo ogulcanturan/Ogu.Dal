@@ -71,6 +71,21 @@ namespace Ogu.Dal.Abstractions
 
         public static Expression<Func<T, bool>> And<T>(this Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
         {
+            if (expr1 == null && expr2 != null)
+            {
+                return expr2;
+            }
+
+            if (expr1 != null && expr2 == null)
+            {
+                return expr1;
+            }
+
+            if (expr1 == null)
+            {
+                throw new ArgumentNullException(nameof(expr1));
+            }
+
             var parameter = Expression.Parameter(typeof(T));
 
             var visitedExpr1 = new ReplaceExpressionVisitor(expr1.Parameters[0], parameter).Visit(expr1.Body);
@@ -82,8 +97,23 @@ namespace Ogu.Dal.Abstractions
             return Expression.Lambda<Func<T, bool>>(combinedExpr, parameter);
         }
 
-        public static Expression<Func<T, bool>> OrAlso<T>(this Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
+        public static Expression<Func<T, bool>> Or<T>(this Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
         {
+            if (expr1 == null && expr2 != null)
+            {
+                return expr2;
+            }
+
+            if (expr1 != null && expr2 == null)
+            {
+                return expr1;
+            }
+
+            if (expr1 == null)
+            {
+                throw new ArgumentNullException(nameof(expr1));
+            }
+
             var parameter = Expression.Parameter(typeof(T));
 
             var visitedExpr1 = new ReplaceExpressionVisitor(expr1.Parameters[0], parameter).Visit(expr1.Body);
