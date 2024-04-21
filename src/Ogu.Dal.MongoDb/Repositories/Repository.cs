@@ -149,9 +149,7 @@ namespace Ogu.Dal.MongoDb.Repositories
 
         public virtual async Task<IPaginated<TEntity>> GetAllAsAsyncPaginated(Expression<Func<TEntity, bool>> predicate = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, int pageIndex = 0, int itemsPerPage = 0, int rangeOfPages = 0, CancellationToken cancellationToken = default)
         {
-            var isPredicateNull = predicate == null;
-
-            var fluentQuery = Table.Find(isPredicateNull ? FilterDefinition<TEntity>.Empty : predicate);
+            var fluentQuery = Table.Find(predicate ?? FilterDefinition<TEntity>.Empty);
 
             if (orderBy != null)
             {
@@ -173,9 +171,7 @@ namespace Ogu.Dal.MongoDb.Repositories
 
         public virtual async Task<ILongPaginated<TEntity>> GetAllAsAsyncLongPaginated(Expression<Func<TEntity, bool>> predicate = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null, Expression<Func<TEntity, TEntity>> selectColumn = null, int pageIndex = 0, int itemsPerPage = 0, int rangeOfPages = 0, CancellationToken cancellationToken = default)
         {
-            var isPredicateNull = predicate == null;
-
-            var fluentQuery = Table.Find(isPredicateNull ? FilterDefinition<TEntity>.Empty : predicate);
+            var fluentQuery = Table.Find(predicate ?? FilterDefinition<TEntity>.Empty);
 
             if (orderBy != null)
             {

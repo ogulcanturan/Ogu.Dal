@@ -12,36 +12,58 @@ namespace Ogu.Dal.Abstractions
 
     public class LongPaginated<TModel> : ILongPaginated<TModel>
     {
-        public LongPaginated()
+        private LongPaginated()
         {
             PagingInfo = new x64.PagingInfo();
             Items = Enumerable.Empty<TModel>();
         }
 
-        public LongPaginated(long pageIndex, long itemsPerPage, long totalItems, long rangeOfPages, TModel[] items)
+        internal LongPaginated(long pageIndex, long itemsPerPage, long totalItems, long rangeOfPages, IEnumerable<TModel> items)
         {
-            Items = items = items ?? Array.Empty<TModel>();
+            var list = items as TModel[] ?? items.ToArray();
 
-            PagingInfo = new x64.PagingInfo(pageIndex, items.Length, itemsPerPage, totalItems, rangeOfPages);
+            if (list.LongLength > totalItems)
+            {
+                totalItems = list.LongLength;
+            }
+
+            if (list.LongLength > itemsPerPage)
+            {
+                itemsPerPage = list.LongLength;
+            }
+
+            Items = list;
+
+            PagingInfo = new x64.PagingInfo(pageIndex, list.LongLength, itemsPerPage, totalItems, rangeOfPages);
         }
 
-        public LongPaginated(long pageIndex, long itemsPerPage, long totalItems, long rangeOfPages, IList<TModel> items)
+        internal LongPaginated(long totalItems, IEnumerable<TModel> items)
         {
-            Items = items = items ?? Array.Empty<TModel>();
+            var list = items as TModel[] ?? items.ToArray();
 
-            PagingInfo = new x64.PagingInfo(pageIndex, items.Count, itemsPerPage, totalItems, rangeOfPages);
+            if (list.LongLength > totalItems)
+            {
+                totalItems = list.LongLength;
+            }
+
+            Items = list;
+
+            PagingInfo = new x64.PagingInfo(1, list.LongLength, totalItems, totalItems, 0);
         }
 
-        public LongPaginated(long totalItems, TModel[] items) : this(1, totalItems, totalItems, 0, items)
+        internal LongPaginated(IEnumerable<TModel> items)
         {
-        }
+            var list = items as TModel[] ?? items.ToArray();
 
-        public LongPaginated(long totalItems, IList<TModel> items) : this(1, totalItems, totalItems, 0, items)
-        {
+            Items = list;
+
+            PagingInfo = new x64.PagingInfo(1, list.LongLength, list.LongLength, list.LongLength, 0);
         }
 
         public IPagingInfo<long> PagingInfo { get; }
         public IEnumerable<TModel> Items { get; set; }
+
+        public static ILongPaginated<TModel> Empty => new LongPaginated<TModel>();
     }
 
     public class LongPaginatedDto<TDto> : ILongPaginated<TDto>

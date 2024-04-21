@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace Ogu.Dal.Abstractions
@@ -12,41 +11,63 @@ namespace Ogu.Dal.Abstractions
 
     public class Paginated<TModel> : IPaginated<TModel>
     {
-        public Paginated()
+        private Paginated()
         {
             PagingInfo = new x86.PagingInfo();
             Items = Enumerable.Empty<TModel>();
         }
 
-        public Paginated(int pageIndex, int itemsPerPage, int totalItems, int rangeOfPages, TModel[] items)
+        internal Paginated(int pageIndex, int itemsPerPage, int totalItems, int rangeOfPages, IEnumerable<TModel> items)
         {
-            Items = items = items ?? Array.Empty<TModel>();
+            var list = items as IList<TModel> ?? items.ToArray();
 
-            PagingInfo = new x86.PagingInfo(pageIndex, items.Length, itemsPerPage, totalItems, rangeOfPages);
+            if (list.Count > totalItems)
+            {
+                totalItems = list.Count;
+            }
+
+            if (list.Count > itemsPerPage)
+            {
+                itemsPerPage = list.Count;
+            }
+
+            Items = list;
+  
+            PagingInfo = new x86.PagingInfo(pageIndex, list.Count, itemsPerPage, totalItems, rangeOfPages);
         }
 
-        public Paginated(int pageIndex, int itemsPerPage, int totalItems, int rangeOfPages, IList<TModel> items)
+        internal Paginated(int totalItems, IEnumerable<TModel> items)
         {
-            Items = items = items ?? new List<TModel>();
+            var list = items as IList<TModel> ?? items.ToArray();
 
-            PagingInfo = new x86.PagingInfo(pageIndex, items.Count, itemsPerPage, totalItems, rangeOfPages);
+            if (list.Count > totalItems)
+            {
+                totalItems = list.Count;
+            }
+
+            Items = list;
+
+            PagingInfo = new x86.PagingInfo(1, list.Count, totalItems, totalItems, 0);
         }
 
-        public Paginated(int totalItems, TModel[] items) : this(1, totalItems, totalItems, 0, items)
+        internal Paginated(IEnumerable<TModel> items)
         {
-        }
+            var list = items as IList<TModel> ?? items.ToArray();
 
-        public Paginated(int totalItems, IList<TModel> items) : this(1, totalItems, totalItems, 0, items)
-        {
+            Items = list;
+
+            PagingInfo = new x86.PagingInfo(1, list.Count, list.Count, list.Count, 0);
         }
 
         public IPagingInfo<int> PagingInfo { get; }
         public IEnumerable<TModel> Items { get; }
+
+        public static IPaginated<TModel> Empty => new Paginated<TModel>();
     }
 
     public class PaginatedDto<TDto> : IPaginated<TDto>
     {
-        public PaginatedDto(IPagingInfo<int> pagingInfo, IEnumerable<TDto> items)
+        internal PaginatedDto(IPagingInfo<int> pagingInfo, IEnumerable<TDto> items)
         {
             PagingInfo = pagingInfo;
             Items = items;

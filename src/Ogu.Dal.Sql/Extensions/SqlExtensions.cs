@@ -67,80 +67,84 @@ namespace Ogu.Dal.Sql.Extensions
 
         public static async Task<IPaginated<TEntity>> ToPaginatedAsync<TEntity>(this IQueryable<TEntity> items, int pageIndex = 0, int itemsPerPage = 0, int rangeOfPages = 0, CancellationToken cancellationToken = default)
         {
-            int totalItems;
-            TEntity[] entities = default;
-
             using (var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadUncommitted }, TransactionScopeAsyncFlowOption.Enabled))
             {
-                totalItems = await items.CountAsync(cancellationToken).ConfigureAwait(false);
-                if (totalItems > 0)
+                var totalItems = await items.CountAsync(cancellationToken).ConfigureAwait(false);
+
+                if (totalItems == 0)
                 {
-                    if (itemsPerPage > 0 && pageIndex > 0)
-                        items = items.Skip((pageIndex - 1) * itemsPerPage).Take(itemsPerPage);
-
-                    entities = await items.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                    return Paginated<TEntity>.Empty;
                 }
-                scope.Complete();
-            }
 
-            return new Paginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, entities);
+                if (itemsPerPage > 0 && pageIndex > 0)
+                    items = items.Skip((pageIndex - 1) * itemsPerPage).Take(itemsPerPage);
+
+                var entities = await items.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+
+                scope.Complete();
+
+                return entities.ToPaginated(totalItems, pageIndex, itemsPerPage, rangeOfPages);
+            }
         }
 
         public static async Task<IPaginated<TEntity>> ToPaginatedAsync<TEntity>(this IQueryable<TEntity> items, CancellationToken cancellationToken = default)
         {
-            int totalItems;
-            TEntity[] entities = default;
-
             using (var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadUncommitted }, TransactionScopeAsyncFlowOption.Enabled))
             {
-                totalItems = await items.CountAsync(cancellationToken).ConfigureAwait(false);
+                var totalItems = await items.CountAsync(cancellationToken).ConfigureAwait(false);
 
-                if (totalItems > 0)
-                    entities = await items.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                if (totalItems == 0)
+                {
+                    return Paginated<TEntity>.Empty;
+                }
+
+                var entities = await items.ToArrayAsync(cancellationToken).ConfigureAwait(false);
 
                 scope.Complete();
-            }
 
-            return new Paginated<TEntity>(totalItems, entities);
+                return entities.ToPaginated(totalItems);
+            }
         }
 
         public static async Task<ILongPaginated<TEntity>> ToLongPaginatedAsync<TEntity>(this IQueryable<TEntity> items, long pageIndex = 0, long itemsPerPage = 0, long rangeOfPages = 0, CancellationToken cancellationToken = default)
         {
-            long totalItems;
-            TEntity[] entities = default;
-
             using (var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadUncommitted }, TransactionScopeAsyncFlowOption.Enabled))
             {
-                totalItems = await items.LongCountAsync(cancellationToken).ConfigureAwait(false);
-                if (totalItems > 0)
+                var totalItems = await items.LongCountAsync(cancellationToken).ConfigureAwait(false);
+
+                if (totalItems == 0)
                 {
-                    if (itemsPerPage > 0 && pageIndex > 0)
-                        items = items.LongSkip((pageIndex - 1) * itemsPerPage).LongTake(itemsPerPage);
-
-                    entities = await items.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                    return LongPaginated<TEntity>.Empty;
                 }
-                scope.Complete();
-            }
 
-            return new LongPaginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, entities);
+                if (itemsPerPage > 0 && pageIndex > 0)
+                    items = items.LongSkip((pageIndex - 1) * itemsPerPage).LongTake(itemsPerPage);
+
+                var entities = await items.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+
+                scope.Complete();
+
+                return entities.ToLongPaginated(totalItems, pageIndex, itemsPerPage, rangeOfPages);
+            }
         }
 
         public static async Task<ILongPaginated<TEntity>> ToLongPaginatedAsync<TEntity>(this IQueryable<TEntity> items, CancellationToken cancellationToken)
         {
-            long totalItems;
-            TEntity[] entities = default;
-
             using (var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadUncommitted }, TransactionScopeAsyncFlowOption.Enabled))
             {
-                totalItems = await items.LongCountAsync(cancellationToken).ConfigureAwait(false);
+                var totalItems = await items.LongCountAsync(cancellationToken).ConfigureAwait(false);
 
-                if (totalItems > 0)
-                    entities = await items.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                if (totalItems == 0)
+                {
+                    return LongPaginated<TEntity>.Empty;
+                }
+
+                var entities = await items.ToArrayAsync(cancellationToken).ConfigureAwait(false);
 
                 scope.Complete();
-            }
 
-            return new LongPaginated<TEntity>(totalItems, entities);
+                return entities.ToLongPaginated(totalItems);
+            }
         }
 
         public static Task<TEntity[]> ToArrayWithNoLockSessionAsync<TEntity>(this IQueryable<TEntity> items, CancellationToken cancellationToken = default) => GetUncommittedAsyncScope(() => items.ToArrayAsync(cancellationToken));
@@ -151,13 +155,14 @@ namespace Ogu.Dal.Sql.Extensions
 
         internal static async Task<T> GetUncommittedAsyncScope<T>(Func<Task<T>> func)
         {
-            T result;
             using (var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadUncommitted }, TransactionScopeAsyncFlowOption.Enabled))
             {
-                result = await func().ConfigureAwait(false);
+                var result = await func().ConfigureAwait(false);
+
                 scope.Complete();
+
+                return result;
             }
-            return result;
         }
 
         public static async Task SeedEnumDatabaseAsync(this DbContext context, CancellationToken cancellationToken = default)
@@ -177,7 +182,7 @@ namespace Ogu.Dal.Sql.Extensions
                 if (enumType == null)
                     continue;
 
-                var tableConstructor = tableType.GetConstructor(new [] { enumType });
+                var tableConstructor = tableType.GetConstructor(new[] { enumType });
 
                 if (tableConstructor == null)
                     continue;
@@ -264,8 +269,6 @@ namespace Ogu.Dal.Sql.Extensions
             efGlobalListener.Subscribe();
             return efGlobalListener;
         }
-
-        
 
         private static readonly HashSet<EntityState> TargetStates = new HashSet<EntityState>
         {

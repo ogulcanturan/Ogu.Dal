@@ -123,110 +123,79 @@ namespace Ogu.Dal.MongoDb.Extensions
         {
             var totalItems = await items.CountAsync(cancellationToken).ConfigureAwait(false);
 
-            List<TEntity> entities;
+            if (totalItems < 1)
+                return Paginated<TEntity>.Empty;
 
-            if (totalItems > 0)
-            {
-                if (itemsPerPage > 0 && pageIndex > 0)
-                    items = items?.Skip((pageIndex - 1) * itemsPerPage).Take(itemsPerPage);
+            if (itemsPerPage > 0 && pageIndex > 0)
+                items = items.Skip((pageIndex - 1) * itemsPerPage).Take(itemsPerPage);
 
-                if (orderBy != null)
-                    items = orderBy(items);
+            if (orderBy != null)
+                items = orderBy(items);
 
-                entities = await items.ToListAsync(cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                entities = new List<TEntity>(0);
-            }
+            var entities = await items.ToListAsync(cancellationToken).ConfigureAwait(false);
 
-            return new Paginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, entities);
+            return entities.ToPaginated(totalItems, pageIndex, itemsPerPage, rangeOfPages);
         }
 
         public static async Task<IPaginated<TEntity>> ToPaginatedAsync<TEntity>(this IFindFluent<TEntity, TEntity> fluentQuery, int totalItems = 0, int pageIndex = 0, int itemsPerPage = 0, int rangeOfPages = 0,
             CancellationToken cancellationToken = default)
         {
-            List<TEntity> entities = default;
+            if (totalItems < 1)
+                return Paginated<TEntity>.Empty;
 
-            if (totalItems > 0)
-            {
-                if (itemsPerPage > 0 && pageIndex > 0)
-                    fluentQuery = fluentQuery.Skip((pageIndex - 1) * itemsPerPage).Limit(itemsPerPage);
+            if (itemsPerPage > 0 && pageIndex > 0)
+                fluentQuery = fluentQuery.Skip((pageIndex - 1) * itemsPerPage).Limit(itemsPerPage);
 
-                entities = await fluentQuery.ToListAsync(cancellationToken);
-            }
+            var entities = await fluentQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
 
-            return new Paginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, entities);
+            return entities.ToPaginated(totalItems, pageIndex, itemsPerPage, rangeOfPages);
         }
 
         public static async Task<ILongPaginated<TEntity>> ToLongPaginatedAsync<TEntity>(this IFindFluent<TEntity, TEntity> fluentQuery, long totalItems = 0, long pageIndex = 0, long itemsPerPage = 0, long rangeOfPages = 0,
             CancellationToken cancellationToken = default)
         {
-            List<TEntity> entities = default;
+            if (totalItems < 1)
+                return LongPaginated<TEntity>.Empty;
 
-            if (totalItems > 0)
-            {
-                if (itemsPerPage > 0 && pageIndex > 0)
-                    fluentQuery = fluentQuery.LongSkip((pageIndex - 1) * itemsPerPage).LongTake(itemsPerPage);
+            if (itemsPerPage > 0 && pageIndex > 0)
+                fluentQuery = fluentQuery.LongSkip((pageIndex - 1) * itemsPerPage).LongTake(itemsPerPage);
 
-                entities = await fluentQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
-            }
+            var entities = await fluentQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
 
-            return new LongPaginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, entities);
+            return entities.ToLongPaginated(totalItems, pageIndex, itemsPerPage, rangeOfPages);
         }
 
         public static async Task<IPaginated<TEntity>> ToPaginatedAsync<TEntity>(this IMongoQueryable<TEntity> items, Func<IMongoQueryable<TEntity>, IOrderedMongoQueryable<TEntity>> orderBy, CancellationToken cancellationToken = default)
         {
             var totalItems = await items.CountAsync(cancellationToken).ConfigureAwait(false);
 
-            List<TEntity> entities;
+            if (totalItems < 1)
+                return Paginated<TEntity>.Empty;
 
-            if (totalItems > 0)
-            {
-                if (orderBy != null)
-                    items = orderBy(items);
+            if (orderBy != null)
+                items = orderBy(items);
 
-                entities = await items.ToListAsync(cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                entities = new List<TEntity>(0);
-            }
+            var entities = await items.ToListAsync(cancellationToken).ConfigureAwait(false);
 
-            return new Paginated<TEntity>(totalItems, entities);
+            return entities.ToPaginated(totalItems);
         }
 
         public static async Task<ILongPaginated<TEntity>> ToLongPaginatedAsync<TEntity>(this IMongoQueryable<TEntity> items, Func<IMongoQueryable<TEntity>, IOrderedMongoQueryable<TEntity>> orderBy = null, long pageIndex = 0, long itemsPerPage = 0, long rangeOfPages = 0, CancellationToken cancellationToken = default)
         {
             var totalItems = await items.LongCountAsync(cancellationToken).ConfigureAwait(false);
 
-            List<TEntity> entities;
+            if (totalItems < 1)
+                return LongPaginated<TEntity>.Empty;
 
-            if (totalItems > 0)
-            {
-                if (itemsPerPage > 0 && pageIndex > 0)
-                    items = items.LongSkip((pageIndex - 1) * itemsPerPage).LongTake(itemsPerPage);
+            if (itemsPerPage > 0 && pageIndex > 0)
+                items = items.LongSkip((pageIndex - 1) * itemsPerPage).LongTake(itemsPerPage);
 
-                if (orderBy != null)
-                    items = orderBy(items);
+            if (orderBy != null)
+                items = orderBy(items);
 
-                entities = await items.ToListAsync(cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                entities = new List<TEntity>(0);
-            }
+            var entities = await items.ToListAsync(cancellationToken).ConfigureAwait(false);
 
-            return new LongPaginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, entities);
-        }
-
-        public static async Task<ILongPaginated<TEntity>> ToLongPaginatedAsync<TEntity>(this IMongoQueryable<TEntity> items, CancellationToken cancellationToken)
-        {
-            var totalItems = await items.LongCountAsync(cancellationToken).ConfigureAwait(false);
-
-            var entities = totalItems > 0 ? await items.ToListAsync(cancellationToken).ConfigureAwait(false) : new List<TEntity>(0);
-
-            return new LongPaginated<TEntity>(totalItems, entities);
+            return entities.ToLongPaginated(totalItems, pageIndex, itemsPerPage, rangeOfPages);
         }
 
         public static IFindFluent<T, T> LongSkip<T>(this IFindFluent<T, T> fluentQuery, long count) => LongSkip(fluentQuery, int.MaxValue, count);
@@ -434,7 +403,7 @@ namespace Ogu.Dal.MongoDb.Extensions
                     var predicate = eqMethod.Invoke(filterInstance, new object[] { fieldDef, ((int)id).ToString() });
 
                     var replaceOneModel = replaceOneModelConstructor.Invoke(new object[] { predicate, enumClass });
-              
+
                     isUpsertProperty.SetValue(replaceOneModel, true);
 
                     addMethod.Invoke(writeModelList, new object[] { replaceOneModel });

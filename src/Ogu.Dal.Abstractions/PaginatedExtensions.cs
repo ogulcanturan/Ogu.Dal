@@ -6,66 +6,96 @@ namespace Ogu.Dal.Abstractions
 {
     public static class PaginatedExtensions
     {
-        public static IPaginated<TEntity> ToPaginated<TEntity>(this TEntity[] items, int pageIndex, int itemsPerPage = 0, int rangeOfPages = 0)
+        public static IPaginated<TModel> ToPaginated<TModel>(this IEnumerable<TModel> items, int pageIndex, int itemsPerPage, int rangeOfPages = 0)
         {
-            var totalItems = 0;
-
             if (items == null)
-                return new Paginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, Array.Empty<TEntity>());
+                throw new ArgumentNullException(nameof(items));
 
-            totalItems = items.Length;
+            var list = items as IList<TModel> ?? items.ToArray();
 
-            if (totalItems > 0 && itemsPerPage > 0 && pageIndex > 0)
-            {
-                items = items.Skip((pageIndex - 1) * itemsPerPage).Take(itemsPerPage).ToArray();
-            }
-
-            return new Paginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, items);
+            return new Paginated<TModel>(pageIndex, itemsPerPage, list.Count, rangeOfPages,
+                list.Count > 0 && itemsPerPage > 0 && pageIndex > 0
+                    ? list.Skip((pageIndex - 1) * itemsPerPage).Take(itemsPerPage)
+                    : list);
         }
 
-        public static IPaginated<TEntity> ToPaginated<TEntity>(this TEntity[] items)
+        public static IPaginated<TModel> ToPaginated<TModel>(this IEnumerable<TModel> items, int totalItems, int pageIndex, int itemsPerPage, int rangeOfPages)
         {
-            return items != null ? new Paginated<TEntity>(items.Length, items) : new Paginated<TEntity>(0, Array.Empty<TEntity>());
-        }
-
-        public static ILongPaginated<TEntity> ToLongPaginated<TEntity>(this TEntity[] items, long pageIndex, long itemsPerPage = 0, long rangeOfPages = 0)
-        {
-            var totalItems = 0L;
-
             if (items == null)
-                return new LongPaginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, Array.Empty<TEntity>());
+                throw new ArgumentNullException(nameof(items));
 
-            totalItems = items.LongLength;
-
-            if (totalItems > 0 && itemsPerPage > 0
-                               && pageIndex > 0)
-            {
-                items = items.LongSkip((pageIndex - 1) * itemsPerPage).LongTake(itemsPerPage).ToArray();
-            }
-            return new LongPaginated<TEntity>(pageIndex, itemsPerPage, totalItems, rangeOfPages, items);
+            return new Paginated<TModel>(pageIndex, itemsPerPage, totalItems, rangeOfPages, items);
         }
 
-        public static ILongPaginated<TEntity> ToLongPaginated<TEntity>(this TEntity[] items)
+        public static IPaginated<TModel> ToPaginated<TModel>(this IEnumerable<TModel> items, int totalItems)
         {
-            return items != null ? new LongPaginated<TEntity>(items.LongLength, items) : new LongPaginated<TEntity>(0, Array.Empty<TEntity>());
+            if (items == null)
+                throw new ArgumentNullException(nameof(items));
+
+            return new Paginated<TModel>(totalItems, items);
         }
 
-        public static IPaginated<TDto> ToPaginatedDto<TDto, TEntity>(this IPaginated<TEntity> paginated, IEnumerable<TDto> items) where TEntity : class
+        public static IPaginated<TModel> ToPaginated<TModel>(this IEnumerable<TModel> items)
+        {
+            if (items == null)
+                throw new ArgumentNullException(nameof(items));
+
+            return new Paginated<TModel>(items);
+        }
+
+        public static ILongPaginated<TModel> ToLongPaginated<TModel>(this IEnumerable<TModel> items, long pageIndex, long itemsPerPage, long rangeOfPages = 0)
+        {
+            if (items == null)
+                throw new ArgumentNullException(nameof(items));
+
+            var list = items as TModel[] ?? items.ToArray();
+
+            return new LongPaginated<TModel>(pageIndex, itemsPerPage, list.LongLength, rangeOfPages,
+                list.LongLength > 0 && itemsPerPage > 0 && pageIndex > 0
+                    ? list.LongSkip((pageIndex - 1) * itemsPerPage).LongTake(itemsPerPage)
+                    : list);
+        }
+
+        public static ILongPaginated<TModel> ToLongPaginated<TModel>(this IEnumerable<TModel> items, long totalItems, long pageIndex, long itemsPerPage, long rangeOfPages)
+        {
+            if (items == null)
+                throw new ArgumentNullException(nameof(items));
+
+            return new LongPaginated<TModel>(pageIndex, itemsPerPage, totalItems, rangeOfPages, items);
+        }
+
+        public static ILongPaginated<TModel> ToLongPaginated<TModel>(this IEnumerable<TModel> items, long totalItems)
+        {
+            if (items == null)
+                throw new ArgumentNullException(nameof(items));
+
+            return new LongPaginated<TModel>(totalItems, items);
+        }
+
+        public static ILongPaginated<TModel> ToLongPaginated<TModel>(this IEnumerable<TModel> items)
+        {
+            if (items == null)
+                throw new ArgumentNullException(nameof(items));
+
+            return new LongPaginated<TModel>(items);
+        }
+
+        public static IPaginated<TDto> ToPaginatedDto<TDto, TModel>(this IPaginated<TModel> paginated, IEnumerable<TDto> items) where TModel : class
         {
             return new PaginatedDto<TDto>(paginated.PagingInfo, items);
         }
 
-        public static IPaginated<TDto> ToPaginatedDto<TDto, TEntity>(this IPaginated<TEntity> paginated, Func<IEnumerable<TEntity>, IEnumerable<TDto>> func) where TEntity : class
+        public static IPaginated<TDto> ToPaginatedDto<TDto, TModel>(this IPaginated<TModel> paginated, Func<IEnumerable<TModel>, IEnumerable<TDto>> func) where TModel : class
         {
             return ToPaginatedDto(paginated, func(paginated.Items));
         }
 
-        public static ILongPaginated<TDto> ToLongPaginatedDto<TDto, TEntity>(this ILongPaginated<TEntity> paginated, IEnumerable<TDto> items) where TEntity : class
+        public static ILongPaginated<TDto> ToLongPaginatedDto<TDto, TModel>(this ILongPaginated<TModel> paginated, IEnumerable<TDto> items) where TModel : class
         {
             return new LongPaginatedDto<TDto>(paginated.PagingInfo, items);
         }
 
-        public static ILongPaginated<TDto> ToLongPaginatedDto<TDto, TEntity>(this ILongPaginated<TEntity> paginated, Func<IEnumerable<TEntity>, IEnumerable<TDto>> func) where TEntity : class
+        public static ILongPaginated<TDto> ToLongPaginatedDto<TDto, TModel>(this ILongPaginated<TModel> paginated, Func<IEnumerable<TModel>, IEnumerable<TDto>> func) where TModel : class
         {
             return ToLongPaginatedDto(paginated, func(paginated.Items));
         }
