@@ -30,8 +30,8 @@ namespace Sql.Sample.Api.Services
             Category = product.Category?.ToDto()
         };
 
-        public static CategoryDto[] ToDto(this IEnumerable<Category> categories) => categories.Select(c => c.ToDto()).ToArray();
+        public static IEnumerable<CategoryDto> ToDto(this IEnumerable<Category> categories) => categories.Select(c => c.ToDto());
 
-        public static ProductDto[] ToDto(this IEnumerable<Product> products) => products.Select(e => e.ToDto()).ToArray();
+        public static IEnumerable<ProductDto> ToDto(this IEnumerable<Product> products) => products.Select(e => e.ToDto());
     }
 }

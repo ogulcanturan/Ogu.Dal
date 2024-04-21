@@ -111,7 +111,7 @@ namespace Sql.Sample.Api.Services
             }
             else
             {
-                // To Update entity without fetching db (One call - Faster) - will return default value if it couldn't find!
+                // To Update entity without fetching db (One call - Faster) - will return updated entities
                 entities = await _categoryRepository.InstantUpdateRangeAsync(TrackingActivityEnum.Inactive, request.Body.Ids, c => c.Name = request.Body.Name, cancellationToken: cancellationToken);
             }
 
