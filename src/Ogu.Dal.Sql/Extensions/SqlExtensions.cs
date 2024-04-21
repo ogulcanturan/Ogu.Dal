@@ -251,14 +251,20 @@ namespace Ogu.Dal.Sql.Extensions
 #endif
         }
 
-        public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> query, string orderBy, bool isAscending = false)
+        public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> query, string orderBy)
         {
             if (string.IsNullOrWhiteSpace(orderBy))
                 throw new ArgumentException("Property name cannot be null or whitespace.", nameof(orderBy));
 
-            return isAscending ?
-                query.OrderBy(c => EF.Property<object>(c, orderBy)) :
-                query.OrderByDescending(c => EF.Property<object>(c, orderBy));
+            return query.OrderBy(c => EF.Property<object>(c, orderBy));
+        }
+
+        public static IOrderedQueryable<T> OrderByDescending<T>(this IQueryable<T> query, string orderBy)
+        {
+            if (string.IsNullOrWhiteSpace(orderBy))
+                throw new ArgumentException("Property name cannot be null or whitespace.", nameof(orderBy));
+
+            return query.OrderByDescending(c => EF.Property<object>(c, orderBy));
         }
 
         public static EfGlobalListener UseEfGlobalListener(Action<EfGlobalOptions> opts = null)
