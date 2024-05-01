@@ -251,6 +251,25 @@ namespace Ogu.Dal.Sql.Extensions
 #endif
         }
 
+        public static Func<IQueryable<T>, IOrderedQueryable<T>> ToOrderedQueryableFunc<T>(this string orderBy, SortOrderEnum sortOrder = SortOrderEnum.Ascending) 
+        {
+            switch (orderBy)
+            {
+                case null:
+                    throw new ArgumentNullException(nameof(orderBy));
+                case "":
+                case " ":
+                return null;
+            }
+
+            if (sortOrder == SortOrderEnum.Ascending)
+            {
+                return t => t.OrderBy(x => EF.Property<object>(x, orderBy));
+            }
+
+            return t => t.OrderByDescending(x => EF.Property<object>(x, orderBy));
+        }
+
         public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> query, string orderBy)
         {
             if (string.IsNullOrWhiteSpace(orderBy))
