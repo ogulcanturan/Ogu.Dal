@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Ogu.Dal.Sql.Repositories;
+﻿using Ogu.Dal.Sql.Repositories;
 using Sql.Sample.Api.Domain.Entities;
 using Sql.Sample.Api.Domain.Repositories.Interfaces;
 

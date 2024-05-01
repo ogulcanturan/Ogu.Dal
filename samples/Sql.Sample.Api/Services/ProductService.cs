@@ -11,6 +11,5 @@ namespace Sql.Sample.Api.Services
         {
             _productRepository = productRepository;
         }
-
     }
 }

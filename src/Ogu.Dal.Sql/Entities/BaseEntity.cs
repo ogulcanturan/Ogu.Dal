@@ -1,5 +1,5 @@
-﻿using System;
-using Ogu.Dal.Abstractions;
+﻿using Ogu.Dal.Abstractions;
+using System;
 
 namespace Ogu.Dal.Sql.Entities
 {

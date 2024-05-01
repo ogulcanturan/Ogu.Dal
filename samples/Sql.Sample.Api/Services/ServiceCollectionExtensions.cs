@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Sql.Sample.Api.Domain;
 using Sql.Sample.Api.Services.Interfaces;
 using System;
-using Sql.Sample.Api.Domain;
 
 namespace Sql.Sample.Api.Services
 {

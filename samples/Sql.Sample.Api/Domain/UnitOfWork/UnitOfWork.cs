@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Sql.Sample.Api.Domain.Repositories;
+﻿using Sql.Sample.Api.Domain.Repositories;
 using Sql.Sample.Api.Domain.Repositories.Interfaces;
 
 namespace Sql.Sample.Api.Domain.UnitOfWork
