@@ -38,8 +38,14 @@ namespace Ogu.Dal.Abstractions
 
         public static Expression<Func<T, T>> ToColumnsSelectionExpression<T>(this string columns, params char[] separators)
         {
-            if (string.IsNullOrWhiteSpace(columns))
-                throw new ArgumentException("Property name cannot be null or whitespace.", nameof(columns));
+            switch (columns)
+            {
+                case null:
+                    throw new ArgumentNullException(nameof(columns));
+                case "":
+                case " ":
+                    return null;
+            }
 
             if (separators == null || separators.Length == 0)
             {
