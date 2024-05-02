@@ -1,76 +1,123 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text;
 
 namespace Ogu.Dal.Abstractions
 {
     public static class Extensions
     {
-//        public static string GenerateHash(params string[] inputs)
-//        {
-//            var concatenatedInput =
-//#if NETSTANDARD2_1
-//            string.Join('_', inputs);
-//#else
-//            string.Join("_", inputs);
-//#endif
+        //        public static string GenerateHash(params string[] inputs)
+        //        {
+        //            var concatenatedInput =
+        //#if NETSTANDARD2_1
+        //            string.Join('_', inputs);
+        //#else
+        //            string.Join("_", inputs);
+        //#endif
 
-//#if NET5_0_OR_GREATER
-//            var inputBytes = Encoding.UTF8.GetBytes(concatenatedInput);
-//            var inputHash = SHA256.HashData(inputBytes);
-//            return Convert.ToHexString(inputHash);
-//#else
-//            using (SHA256 sha256Hash = SHA256.Create())
-//            {
-//                var hashBytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(concatenatedInput));
+        //#if NET5_0_OR_GREATER
+        //            var inputBytes = Encoding.UTF8.GetBytes(concatenatedInput);
+        //            var inputHash = SHA256.HashData(inputBytes);
+        //            return Convert.ToHexString(inputHash);
+        //#else
+        //            using (SHA256 sha256Hash = SHA256.Create())
+        //            {
+        //                var hashBytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(concatenatedInput));
 
-//                var builder = new StringBuilder();
+        //                var builder = new StringBuilder();
 
-//                for (var i = 0; i < hashBytes.Length; i++)
-//                {
-//                    builder.Append(hashBytes[i].ToString("x2"));
-//                }
+        //                for (var i = 0; i < hashBytes.Length; i++)
+        //                {
+        //                    builder.Append(hashBytes[i].ToString("x2"));
+        //                }
 
-//                return builder.ToString();
-//            }
-//#endif
-//        }
+        //                return builder.ToString();
+        //            }
+        //#endif
+        //        }
 
-        public static Expression<Func<T, T>> ToColumnsSelectionExpression<T>(this string columns, params char[] separators)
+        public static string ToProperIncludeProperties(
+            this IDictionary<string, string> propertyMappingDictionary, string include, params string[] extras)
         {
-            switch (columns)
-            {
-                case null:
-                    throw new ArgumentNullException(nameof(columns));
-                case "":
-                case " ":
-                    return null;
-            }
+            if (propertyMappingDictionary == null)
+                throw new ArgumentNullException(nameof(propertyMappingDictionary));
 
-            if (separators == null || separators.Length == 0)
-            {
-                separators = new[] { ',' };
-            }
+            extras = extras ?? Array.Empty<string>();
+
+            return string.Join(",", TryExtractValuesFromDictionary(propertyMappingDictionary, GetIncludeListOrEmpty(include)).Concat(extras).Distinct());
+        }
+
+        public static string ToProperIncludeProperties(this string include, params string[] extras)
+        {
+            if (include == null)
+                throw new ArgumentNullException(nameof(include));
+
+            extras = extras ?? Array.Empty<string>();
+
+            return string.Join(",", GetIncludeListOrEmpty(include).Concat(extras).Distinct());
+        }
+
+        public static Expression<Func<T, T>> ToProperColumnsSelectionExpression<T>(
+            this IDictionary<string, string> propertyMappingDictionary, string select, params string[] extras)
+        {
+            if (propertyMappingDictionary == null)
+                throw new ArgumentNullException(nameof(propertyMappingDictionary));
+
+            extras = extras ?? Array.Empty<string>();
 
             var type = typeof(T);
 
             var parameter = Expression.Parameter(type, "x");
 
-            var bindings = columns.Split(separators, StringSplitOptions.RemoveEmptyEntries)
-                .Select(name => name.Trim())
-                .Where(name => name != string.Empty)
-                .Select(name =>
-                {
-                    var memberExpression = Expression.PropertyOrField(parameter, name);
+            var distinctSelection =
+                TryExtractValuesFromDictionary(propertyMappingDictionary, GetSelectListOrEmpty(select)).Concat(extras)
+                    .Distinct().ToArray();
 
-                    return Expression.Bind(memberExpression.Member, memberExpression);
-                });
+            if (distinctSelection.Length == 0)
+                return null;
+
+            var bindings = distinctSelection.Select(name =>
+                    {
+                        var memberExpression = Expression.PropertyOrField(parameter, name);
+
+                        return Expression.Bind(memberExpression.Member, memberExpression);
+                    });
 
             var body = Expression.MemberInit(Expression.New(type), bindings);
 
-            var selector = Expression.Lambda<Func<T, T>>(body, parameter);
+            return Expression.Lambda<Func<T, T>>(body, parameter);
+        }
 
-            return selector;
+        public static Expression<Func<T, T>> ToColumnsSelectionExpression<T>(this string select, params string[] extras)
+        {
+            if(select == null) 
+                throw new ArgumentNullException(nameof(select));
+
+            extras = extras ?? Array.Empty<string>();
+
+            var type = typeof(T);
+
+            var parameter = Expression.Parameter(type, "x");
+
+            var distinctSelection =
+               GetSelectListOrEmpty(select).Concat(extras)
+                    .Distinct().ToArray();
+
+            if (distinctSelection.Length == 0)
+                return null;
+
+            var bindings = distinctSelection.Select(name =>
+            {
+                var memberExpression = Expression.PropertyOrField(parameter, name);
+
+                return Expression.Bind(memberExpression.Member, memberExpression);
+            });
+
+            var body = Expression.MemberInit(Expression.New(type), bindings);
+
+            return Expression.Lambda<Func<T, T>>(body, parameter);
         }
 
         public static Expression<Func<T, bool>> And<T>(this Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
@@ -143,6 +190,52 @@ namespace Ogu.Dal.Abstractions
             public override Expression Visit(Expression node)
             {
                 return node == _oldValue ? _newValue : base.Visit(node);
+            }
+        }
+
+        private static IEnumerable<string> GetSelectListOrEmpty(string select)
+        {
+            if (string.IsNullOrWhiteSpace(select))
+                return Enumerable.Empty<string>();
+
+            return select.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(i => i.Trim())
+                .Where(i => i != string.Empty);
+        }
+
+        private static IEnumerable<string> GetIncludeListOrEmpty(string include)
+        {
+            if (string.IsNullOrWhiteSpace(include))
+                return Enumerable.Empty<string>();
+
+            var substrings = new HashSet<string>();
+
+            var currentSubstring = new StringBuilder();
+
+            foreach (var part in include.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(i => i.Trim()).Where(i => i != string.Empty))
+            {
+                foreach (var nestedPart in part.Split(new char[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Select(i => i.Trim()).Where(i => i != string.Empty))
+                {
+                    if (currentSubstring.Length > 0)
+                        currentSubstring.Append('.');
+
+                    currentSubstring.Append(nestedPart);
+                    substrings.Add(currentSubstring.ToString());
+                }
+
+                currentSubstring.Clear();
+            }
+
+            return substrings;
+        }
+
+        private static IEnumerable<string> TryExtractValuesFromDictionary(IDictionary<string, string> dictionary, IEnumerable<string> keys)
+        {
+            foreach (var key in keys)
+            {
+                if (dictionary.TryGetValue(key, out var extractedValue))
+                {
+                    yield return extractedValue;
+                }
             }
         }
     }
