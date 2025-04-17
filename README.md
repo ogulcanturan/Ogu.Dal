@@ -1,4 +1,4 @@
-> ⚠️ **Warning:** These packages are legacy and is no longer maintained.
+> ⚠️ **Warning:** This repository is legacy and is no longer maintained.
 
 # <img src="logo/ogu-logo.png" alt="Header" width="24"/> Ogu.Dal 
 
